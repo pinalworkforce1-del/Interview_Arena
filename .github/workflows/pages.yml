@@ -28,6 +28,18 @@ jobs:
           cat interview-arena-source.tar.gz.part-* > interview-arena-source.tar.gz
           mkdir restored
           tar -xzf interview-arena-source.tar.gz -C restored
+      - name: Apply Level Up UX Standard v1
+        run: |
+          cp level-up-standard.css restored/dist/level-up-standard.css
+          cp level-up-standard.js restored/dist/level-up-standard.js
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('restored/dist/index.html')
+          s = p.read_text()
+          s = s.replace('</head>', '<link rel="stylesheet" href="./level-up-standard.css"></head>')
+          s = s.replace('</body>', '<script src="./level-up-standard.js"></script></body>')
+          p.write_text(s)
+          PY
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload static site
