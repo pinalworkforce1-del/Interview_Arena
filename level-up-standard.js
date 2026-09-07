@@ -30,13 +30,14 @@
   function decorateHotspots(){
     const selector=[
       'button.image-hotspot','a.image-hotspot',
-      'button[class*="hotspot"]:not(.hotspot-layer)','a[class*="hotspot"]:not(.hotspot-layer)'
+      'button[class*="hotspot"]:not(.hotspot-layer)','a[class*="hotspot"]:not(.hotspot-layer)',
+      'button.card-front'
     ].join(',');
     document.querySelectorAll(selector).forEach(el=>{
       if(el.closest('.lu-scene-rail'))return;
       el.classList.add('lu-hotspot-iconized');
       const cue=(el.querySelector('.hotspot-cue')?.textContent||'').trim();
-      const explored=el.classList.contains('explored')||/^✓/.test(cue)||/explored/i.test(cue);
+      const explored=el.classList.contains('explored')||el.closest('.loadout-card')?.classList.contains('viewed')||/^✓/.test(cue)||/explored/i.test(cue);
       el.dataset.luIcon=explored?'✓':'✦';
       el.dataset.luLabel=hotspotLabel(el);
       el.dataset.luState=explored?'explored':'available';
