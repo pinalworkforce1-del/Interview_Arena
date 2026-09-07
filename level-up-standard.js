@@ -12,6 +12,18 @@
     if(el.classList.contains('phone'))return 'Phone Invitation';
     if(el.classList.contains('email'))return 'Email Invitation';
     if(el.classList.contains('reflection'))return 'Review Interview Readiness';
+    if(el.classList.contains('card-front')){
+      const raw=(el.getAttribute('aria-label')||'').replace(/^Explore\s+/i,'').trim();
+      const short={
+        'Appropriate Outfit':'Outfit',
+        'Résumé Folder':'Résumé',
+        'Notebook & Pen':'Notebook',
+        'Interview Questions':'Questions',
+        'Directions & Route':'Route',
+        'Positive Mindset':'Mindset'
+      };
+      return short[raw]||raw||'Explore';
+    }
     const cue=(el.querySelector('.hotspot-cue')?.textContent||'').trim();
     let text=(el.getAttribute('aria-label')||el.getAttribute('title')||'').trim();
     if(!text||/^(explore|open|enter|select|choose|view)$/i.test(text))text=cue;
