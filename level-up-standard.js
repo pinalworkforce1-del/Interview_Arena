@@ -8,6 +8,10 @@
 
   const titleCase=text=>text.replace(/\b([a-z])/g,m=>m.toUpperCase());
   function hotspotLabel(el){
+    if(el.classList.contains('arena'))return 'Interview Arena';
+    if(el.classList.contains('phone'))return 'Phone Invitation';
+    if(el.classList.contains('email'))return 'Email Invitation';
+    if(el.classList.contains('reflection'))return 'Review Interview Readiness';
     const cue=(el.querySelector('.hotspot-cue')?.textContent||'').trim();
     let text=(el.getAttribute('aria-label')||el.getAttribute('title')||'').trim();
     if(!text||/^(explore|open|enter|select|choose|view)$/i.test(text))text=cue;
