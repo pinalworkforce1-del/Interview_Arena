@@ -6,6 +6,39 @@
   const activeVideo=()=>q('#lessonNarration','#narration');
   let scheduled=false;
 
+  const titleCase=text=>text.replace(/\b([a-z])/g,m=>m.toUpperCase());
+  function hotspotLabel(el){
+    const cue=(el.querySelector('.hotspot-cue')?.textContent||'').trim();
+    let text=(el.getAttribute('aria-label')||el.getAttribute('title')||'').trim();
+    if(!text||/^(explore|open|enter|select|choose|view)$/i.test(text))text=cue;
+    text=text
+      .replace(/^(explore|open|enter|select|choose|view|activate|visit)\s+(the\s+)?/i,'')
+      .replace(/^(click|tap)\s+(to\s+)?/i,'')
+      .replace(/\s+(illustrated\s+)?learning\s+scene$/i,'')
+      .replace(/\s+hotspot$/i,'')
+      .replace(/^✓\s*/,'')
+      .replace(/^explored\s*:?\s*/i,'')
+      .trim();
+    if(!text||/^explored$/i.test(text))text='Explore';
+    return titleCase(text);
+  }
+
+  function decorateHotspots(){
+    const selector=[
+      'button.image-hotspot','a.image-hotspot',
+      'button[class*="hotspot"]:not(.hotspot-layer)','a[class*="hotspot"]:not(.hotspot-layer)'
+    ].join(',');
+    document.querySelectorAll(selector).forEach(el=>{
+      if(el.closest('.lu-scene-rail'))return;
+      el.classList.add('lu-hotspot-iconized');
+      const cue=(el.querySelector('.hotspot-cue')?.textContent||'').trim();
+      const explored=el.classList.contains('explored')||/^✓/.test(cue)||/explored/i.test(cue);
+      el.dataset.luIcon=explored?'✓':'✦';
+      el.dataset.luLabel=hotspotLabel(el);
+      el.dataset.luState=explored?'explored':'available';
+    });
+  }
+
   function buildRail(wrap){
     const rail=document.createElement('aside');
     rail.className='lu-scene-rail';
@@ -65,6 +98,7 @@
   function ensure(){
     scheduled=false;
     document.body.classList.add('level-up-standard');
+    decorateHotspots();
     const stage=q('.stage','.scene-frame','.game-stage','.scene-stage');
     if(!stage)return;
     let wrap=stage.closest('.lu-standard-wrap');
