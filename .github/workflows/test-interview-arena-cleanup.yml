@@ -2,7 +2,9 @@ name: Test Interview Arena Cleanup
 
 on:
   push:
-    branches: [interview-arena-icon-hotspots]
+    branches: [interview-arena-loadout-icons]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -38,9 +40,11 @@ jobs:
           grep -q "enterArena(){markDone('entry',0);next()}" restored/dist/app.js
           grep -q "document.querySelector('.nav-btn.next')" restored/dist/level-up-standard.js
           grep -q 'decorateHotspots' restored/dist/level-up-standard.js
+          grep -q "'button.card-front'" restored/dist/level-up-standard.js
           grep -q 'lu-hotspot-iconized' restored/dist/level-up-standard.js
           grep -q 'lu-hotspot-iconized::before' restored/dist/level-up-standard.css
           grep -q 'lu-hotspot-iconized::after' restored/dist/level-up-standard.css
+          grep -q 'lu-hotspot-iconized.card-front' restored/dist/level-up-standard.css
           grep -q 'MutationObserver' restored/dist/level-up-standard.js
           grep -q 'canvas>.caption-shade' restored/dist/level-up-standard.css
           ! grep -q 'lu-caption-backdrop' restored/dist/level-up-standard.js
@@ -53,9 +57,9 @@ jobs:
           sleep 1
           CHROME=$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)
           test -n "$CHROME"
-          "$CHROME" --headless=new --no-sandbox --disable-gpu --autoplay-policy=no-user-gesture-required --virtual-time-budget=17000 --dump-dom http://127.0.0.1:8000/ > /tmp/interview-arena-dom.html
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --autoplay-policy=no-user-gesture-required --virtual-time-budget=18000 --dump-dom http://127.0.0.1:8000/ > /tmp/interview-arena-dom.html
           echo '--- smoke marker ---'
-          grep -n -A80 -B5 'smoke-result\|INTERVIEW_ARENA_SMOKE_' /tmp/interview-arena-dom.html || true
+          grep -n -A100 -B5 'smoke-result\|INTERVIEW_ARENA_SMOKE_' /tmp/interview-arena-dom.html || true
           echo '--- page title ---'
           grep -o '<title>[^<]*</title>' /tmp/interview-arena-dom.html | tail -1 || true
           grep -q 'INTERVIEW_ARENA_SMOKE_PASS' /tmp/interview-arena-dom.html
