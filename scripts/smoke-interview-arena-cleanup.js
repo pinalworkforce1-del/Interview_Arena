@@ -2,6 +2,24 @@
   const wait=ms=>new Promise(r=>setTimeout(r,ms));
   const results=[];
   const check=(ok,label)=>{results.push({ok:!!ok,label});console.log(`${ok?'PASS':'FAIL'}: ${label}`)};
+  const hotspotSelector='button[class*="hotspot"]:not(.hotspot-layer),a[class*="hotspot"]:not(.hotspot-layer)';
+  const checkHotspots=label=>{
+    const hotspots=Array.from(document.querySelectorAll(hotspotSelector));
+    if(!hotspots.length)return;
+    const allIconized=hotspots.every(h=>h.classList.contains('lu-hotspot-iconized'));
+    const allLabeled=hotspots.every(h=>!!h.dataset.luLabel&&h.dataset.luLabel!=='Explore');
+    const allIcons=hotspots.every(h=>h.dataset.luIcon==='✦'||h.dataset.luIcon==='✓');
+    const noShapes=hotspots.every(h=>{
+      const s=getComputedStyle(h);
+      return parseFloat(s.borderTopWidth)===0&&s.backgroundColor==='rgba(0, 0, 0, 0)'&&s.borderRadius==='0px';
+    });
+    const hitAreasPreserved=hotspots.every(h=>{const r=h.getBoundingClientRect();return r.width>30&&r.height>30});
+    check(allIconized,`${label}: all image links use the Level Up icon treatment`);
+    check(allLabeled,`${label}: all image links have meaningful labels`);
+    check(allIcons,`${label}: all image links display glow/check icons`);
+    check(noShapes,`${label}: old circle/rectangle hotspot shapes are visually removed`);
+    check(hitAreasPreserved,`${label}: generous hotspot click areas are preserved`);
+  };
   const ensureNarrated=async()=>{
     const id=scenes[state.scene]?.id;
     if(id&&!state.narrationDone.includes(id)){
@@ -19,7 +37,9 @@
   const advanceScene=async(label,doneKeys=[])=>{
     const before=state.scene;
     await ensureNarrated();
+    checkHotspots(label);
     if(doneKeys.length)await markDoneKeys(doneKeys);
+    checkHotspots(`${label} completed`);
     const c=continueBtn();
     check(!!rail(),`${label}: Level Up rail is present`);
     check(!!c&&!c.hidden&&!c.disabled,`${label}: rail Continue is available`);
@@ -42,7 +62,10 @@
     finishNarration();
     await wait(160);
     check(document.querySelectorAll('.lu-scene-rail').length===1,'Rail survives opening narration completion re-render');
-    check(!!document.querySelector('.image-hotspot.arena'),'Opening Interview Arena image hotspot remains available');
+    const arenaHotspot=document.querySelector('.image-hotspot.arena');
+    check(!!arenaHotspot,'Opening Interview Arena image hotspot remains available');
+    checkHotspots('Opening Interview Arena');
+    check((arenaHotspot?.dataset.luLabel||'').toLowerCase().includes('interview'),'Opening hotspot has an intentional Interview Arena label');
 
     enterArena();
     await wait(180);
@@ -58,8 +81,16 @@
     await wait(160);
     check(state.narrationDone.includes('invitation'),'Rail Skip completes invitation narration through native app logic');
     check(!!rail(),'Rail survives Skip-triggered re-render');
+    checkHotspots('Interview Invitation revealed');
+    const phone=document.querySelector('.image-hotspot.phone');
+    const email=document.querySelector('.image-hotspot.email');
+    check((phone?.dataset.luLabel||'').toLowerCase().includes('phone'),'Phone hotspot has an intentional label');
+    check((email?.dataset.luLabel||'').toLowerCase().includes('email'),'Email hotspot has an intentional label');
 
     await markDoneKeys(['phone','email']);
+    checkHotspots('Interview Invitation explored state');
+    check(document.querySelector('.image-hotspot.phone')?.dataset.luIcon==='✓','Explored phone hotspot changes to a check icon');
+    check(document.querySelector('.image-hotspot.email')?.dataset.luIcon==='✓','Explored email hotspot changes to a check icon');
     const invitationContinue=continueBtn();
     check(!!invitationContinue&&!invitationContinue.hidden&&!invitationContinue.disabled,'Invitation Continue unlocks after required explorations');
     invitationContinue?.click();
@@ -86,6 +117,7 @@
 
     check(state.scene===10,'Full route reaches Quest Complete celebration');
     await ensureNarrated();
+    checkHotspots('Quest Complete');
     check(state.done.includes('complete'),'Celebration narration marks Quest Complete through native logic');
     const celebrationContinue=continueBtn();
     check(!!celebrationContinue&&!celebrationContinue.hidden&&!celebrationContinue.disabled,'Quest Complete Continue is available in the Level Up rail');
@@ -93,6 +125,7 @@
     await wait(180);
     check(state.scene===11,'Quest Complete advances to final Reflection / Wrap-Up');
     check(!!rail(),'Rail persists into the final wrap-up scene');
+    checkHotspots('Final Reflection');
 
     await ensureNarrated();
     state.complete=true;
