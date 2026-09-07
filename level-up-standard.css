@@ -33,6 +33,14 @@ body.level-up-standard .lu-hotspot-iconized .hotspot-cue{
   visibility:hidden!important;
   pointer-events:none!important
 }
+body.level-up-standard .lu-hotspot-iconized.card-front{
+  animation:none!important
+}
+body.level-up-standard .lu-hotspot-iconized.card-front>span{
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important
+}
 body.level-up-standard .lu-hotspot-iconized::before{
   content:attr(data-lu-icon);
   position:absolute;

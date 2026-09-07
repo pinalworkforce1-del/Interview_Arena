@@ -2,7 +2,7 @@
   const wait=ms=>new Promise(r=>setTimeout(r,ms));
   const results=[];
   const check=(ok,label)=>{results.push({ok:!!ok,label});console.log(`${ok?'PASS':'FAIL'}: ${label}`)};
-  const hotspotSelector='button[class*="hotspot"]:not(.hotspot-layer),a[class*="hotspot"]:not(.hotspot-layer)';
+  const hotspotSelector='button[class*="hotspot"]:not(.hotspot-layer),a[class*="hotspot"]:not(.hotspot-layer),button.card-front';
   const checkHotspots=label=>{
     const hotspots=Array.from(document.querySelectorAll(hotspotSelector));
     if(!hotspots.length)return;
@@ -38,8 +38,18 @@
     const before=state.scene;
     await ensureNarrated();
     checkHotspots(label);
+    if(label==='Prepare Your Loadout'){
+      const fronts=Array.from(document.querySelectorAll('.card-front'));
+      check(fronts.length===6,'Prepare Your Loadout: all six card-front links are present');
+      check(fronts.every(h=>h.classList.contains('lu-hotspot-iconized')),'Prepare Your Loadout: all six card-front links are iconized');
+      check(fronts.every(h=>h.dataset.luLabel&&h.dataset.luLabel!=='Explore'),'Prepare Your Loadout: all six loadout icons have intentional labels');
+    }
     if(doneKeys.length)await markDoneKeys(doneKeys);
     checkHotspots(`${label} completed`);
+    if(label==='Prepare Your Loadout'){
+      const fronts=Array.from(document.querySelectorAll('.card-front'));
+      check(fronts.every(h=>h.dataset.luIcon==='✓'),'Prepare Your Loadout: explored cards change to check icons');
+    }
     const c=continueBtn();
     check(!!rail(),`${label}: Level Up rail is present`);
     check(!!c&&!c.hidden&&!c.disabled,`${label}: rail Continue is available`);
