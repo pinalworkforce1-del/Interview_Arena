@@ -1,14 +1,52 @@
-/* Level Up UX Standard v1 — Interview Arena deployment overlay */
+/* Level Up UX Standard v1 — Interview Arena navigation/caption cleanup */
 :root{--lu-rail:190px}
 body.level-up-standard{overflow-x:hidden}
-body.level-up-standard #root>main,body.level-up-standard main.app,body.level-up-standard .app{max-width:1500px;margin-inline:auto}
-.lu-standard-wrap{display:grid;grid-template-columns:minmax(0,1fr) var(--lu-rail);gap:12px;align-items:start}
+body.level-up-standard #root>main,body.level-up-standard main.app,body.level-up-standard .app,body.level-up-standard main.shell{max-width:1740px;margin-inline:auto}
+.lu-standard-wrap{display:grid;grid-template-columns:minmax(0,1fr) var(--lu-rail);gap:16px;align-items:start}
 .lu-standard-wrap>.lu-stage-host{min-width:0}
-.lu-scene-rail{position:sticky;top:92px;display:grid;gap:8px;padding:10px;border:1px solid #45c1ff40;border-radius:14px;background:#040a1fd9;box-shadow:0 18px 60px #0007;backdrop-filter:blur(14px);z-index:50}
+.lu-standard-wrap .stage{width:100%;max-width:none;margin:.75rem 0}
+.lu-standard-wrap .canvas{width:100%;aspect-ratio:16/9;background:#02040d}
+.lu-standard-wrap .canvas>.visual,.lu-standard-wrap .canvas>.narration{object-fit:cover}
+
+/* One caption treatment only: the native shade becomes the approved Level Up lower overlay. */
+body.level-up-standard .canvas>.caption-shade,
+body.level-up-standard .canvas>.caption-shade.caption-strong,
+body.level-up-standard .lesson-narration>.caption-shade{
+  left:10%;right:10%;bottom:1%;height:11%;
+  background:linear-gradient(90deg,transparent,rgba(0,0,0,.60) 12%,rgba(0,0,0,.60) 88%,transparent);
+  opacity:1;pointer-events:none
+}
+
+/* Right rail is the learner-facing narration + forward-navigation surface. */
+.lu-scene-rail{position:sticky;top:92px;display:grid;gap:10px;padding:14px;border:1px solid #45c1ff40;border-radius:18px;background:linear-gradient(180deg,rgba(9,21,47,.96),rgba(8,11,37,.96));box-shadow:0 18px 60px #0007;backdrop-filter:blur(14px);z-index:50}
 .lu-scene-rail::before{content:"SCENE CONTROLS";color:#8fa7d6;font:800 10px/1.2 Arial,sans-serif;letter-spacing:.14em;text-align:center;margin:2px 0 4px}
-.lu-scene-rail button{min-height:50px;border:1px solid #5c79aa66;border-radius:10px;color:#eef6ff;background:#07132de8;font:800 12px/1.2 Arial,sans-serif;cursor:pointer}
-.lu-scene-rail button:hover,.lu-scene-rail button:focus-visible{border-color:#54eaff;outline:2px solid #54eaff55;outline-offset:2px}
-.lu-scene-rail .lu-continue{color:#03151c;background:linear-gradient(90deg,#31e5f5,#54efb7);border-color:#54efb7;font-weight:950}
-.lu-caption-backdrop{position:absolute;z-index:1;left:10%;right:10%;bottom:1%;height:11%;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(0,0,0,.6) 12%,rgba(0,0,0,.6) 88%,transparent)}
-@media(max-width:1100px){.lu-standard-wrap{grid-template-columns:1fr}.lu-scene-rail{position:static;grid-template-columns:repeat(4,1fr)}.lu-scene-rail::before{grid-column:1/-1}.lu-scene-rail .lu-continue{grid-column:span 2}}
-@media(max-width:650px){.lu-scene-rail{grid-template-columns:repeat(2,1fr)}.lu-caption-backdrop{left:5%;right:5%;height:13%}}
+.lu-scene-rail button{min-height:50px;border:1px solid #5c79aa66;border-radius:12px;color:#eef6ff;background:#07132de8;font:800 12px/1.2 Arial,sans-serif;cursor:pointer;text-align:left;padding:10px}
+.lu-scene-rail button:hover:not(:disabled),.lu-scene-rail button:focus-visible:not(:disabled){border-color:#54eaff;outline:2px solid #54eaff55;outline-offset:2px}
+.lu-scene-rail button:disabled{opacity:.35;cursor:not-allowed}
+.lu-scene-rail .lu-continue{margin-top:8px;color:#03151c;background:linear-gradient(90deg,#31e5f5,#54efb7);border-color:#54efb7;font-weight:950;text-align:center}
+.lu-scene-rail .lu-continue[hidden]{display:none}
+
+/* Keep the native controls as the authoritative app hooks, but not as duplicate learner-facing controls. */
+body.level-up-standard .controls .header-action,
+body.level-up-standard .controls .icon-btn:nth-child(2),
+body.level-up-standard .nav-btn.next{
+  position:absolute!important;width:1px!important;height:1px!important;left:-9999px!important;
+  padding:0!important;margin:0!important;border:0!important;opacity:0!important;
+  pointer-events:none!important;overflow:hidden!important
+}
+body.level-up-standard .navrow{grid-template-columns:auto 1fr}
+body.level-up-standard .scene-status{justify-self:center}
+
+@media(max-width:1100px){
+  .lu-standard-wrap{grid-template-columns:1fr}
+  .lu-scene-rail{position:static;grid-template-columns:repeat(4,1fr);margin-top:10px}
+  .lu-scene-rail::before{grid-column:1/-1}
+  .lu-scene-rail .lu-continue{grid-column:1/-1;margin-top:0}
+  .lu-scene-rail button{text-align:center}
+}
+@media(max-width:650px){
+  .lu-scene-rail{grid-template-columns:repeat(2,1fr)}
+  body.level-up-standard .canvas>.caption-shade,
+  body.level-up-standard .canvas>.caption-shade.caption-strong,
+  body.level-up-standard .lesson-narration>.caption-shade{left:6%;right:6%;height:13%}
+}
