@@ -69,6 +69,34 @@ body.level-up-standard .lu-hotspot-iconized::after{
   text-shadow:0 2px 4px #000,0 0 8px #000,0 0 14px #43e8ff,0 0 24px #6f55ff;
   pointer-events:none
 }
+
+/* Loadout cards are tightly spaced, so use a smaller cue and a short high-contrast label chip. */
+body.level-up-standard .lu-hotspot-iconized.card-front::before{
+  top:52%;
+  font-size:clamp(24px,2vw,31px);
+  text-shadow:0 0 4px #fff,0 0 10px #55ebff,0 0 20px #7a5cff;
+  filter:drop-shadow(0 0 6px #55ebff)
+}
+body.level-up-standard .lu-hotspot-iconized.card-front::after{
+  top:calc(52% + 26px);
+  max-width:92%;
+  padding:3px 7px;
+  border:1px solid rgba(92,232,255,.58);
+  border-radius:999px;
+  background:rgba(3,10,27,.82);
+  color:#f7fdff;
+  font:900 clamp(9px,.72vw,11px)/1 Arial,sans-serif;
+  letter-spacing:.02em;
+  white-space:nowrap;
+  text-shadow:0 1px 3px #000,0 0 8px rgba(67,232,255,.78);
+  box-shadow:0 0 12px rgba(67,232,255,.20)
+}
+body.level-up-standard .lu-hotspot-iconized.card-front[data-lu-state="explored"]::after{
+  border-color:rgba(84,239,183,.60);
+  background:rgba(3,18,23,.86);
+  color:#d8ffef
+}
+
 body.level-up-standard .lu-hotspot-iconized[data-lu-state="explored"]::before{
   color:#8dffd1;
   text-shadow:0 0 5px #fff,0 0 13px #54efb7,0 0 26px #1cd7a3;
@@ -120,4 +148,6 @@ body.level-up-standard .scene-status{justify-self:center}
   body.level-up-standard .lesson-narration>.caption-shade{left:6%;right:6%;height:13%}
   body.level-up-standard .lu-hotspot-iconized::before{font-size:28px}
   body.level-up-standard .lu-hotspot-iconized::after{top:calc(50% + 28px);font-size:11px;max-width:150px}
+  body.level-up-standard .lu-hotspot-iconized.card-front::before{top:50%;font-size:24px}
+  body.level-up-standard .lu-hotspot-iconized.card-front::after{top:calc(50% + 24px);font-size:9px;max-width:90%}
 }
