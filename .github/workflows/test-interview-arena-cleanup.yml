@@ -1,0 +1,57 @@
+name: Test Interview Arena Cleanup
+
+on:
+  push:
+    branches: [interview-arena-navigation-captions]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Restore production source
+        run: |
+          cat interview-arena-source.tar.gz.part-* > interview-arena-source.tar.gz
+          mkdir restored
+          tar -xzf interview-arena-source.tar.gz -C restored
+      - name: Apply Level Up cleanup overlay
+        run: |
+          cp level-up-standard.css restored/dist/level-up-standard.css
+          cp level-up-standard.js restored/dist/level-up-standard.js
+          cp scripts/smoke-interview-arena-cleanup.js restored/dist/smoke-interview-arena-cleanup.js
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('restored/dist/index.html')
+          s=p.read_text()
+          s=s.replace('</head>', '<link rel="stylesheet" href="./level-up-standard.css"></head>')
+          s=s.replace('</body>', '<script src="./level-up-standard.js"></script><script src="./smoke-interview-arena-cleanup.js"></script></body>')
+          p.write_text(s)
+          PY
+      - name: Verify static contract
+        run: |
+          grep -q 'class="nav-btn next"' restored/dist/app.js
+          grep -q "enterArena(){markDone('entry',0);next()}" restored/dist/app.js
+          grep -q "document.querySelector('.nav-btn.next')" restored/dist/level-up-standard.js
+          grep -q 'MutationObserver' restored/dist/level-up-standard.js
+          grep -q 'canvas>.caption-shade' restored/dist/level-up-standard.css
+          ! grep -q 'lu-caption-backdrop' restored/dist/level-up-standard.js
+      - name: Run rendered Chromium smoke test
+        run: |
+          cd restored/dist
+          python3 -m http.server 8000 >/tmp/interview-arena-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          sleep 1
+          CHROME=$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)
+          test -n "$CHROME"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --autoplay-policy=no-user-gesture-required --virtual-time-budget=15000 --dump-dom http://127.0.0.1:8000/ > /tmp/interview-arena-dom.html
+          echo '--- smoke marker ---'
+          grep -n -A40 -B5 'smoke-result\|INTERVIEW_ARENA_SMOKE_' /tmp/interview-arena-dom.html || true
+          echo '--- page title ---'
+          grep -o '<title>[^<]*</title>' /tmp/interview-arena-dom.html | tail -1 || true
+          grep -q 'INTERVIEW_ARENA_SMOKE_PASS' /tmp/interview-arena-dom.html
