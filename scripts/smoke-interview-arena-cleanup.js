@@ -71,11 +71,6 @@
     await wait(180);
     check(state.scene===1,'Opening image hotspot advances into Interview Invitation');
     check(document.querySelectorAll('.lu-scene-rail').length===1,'Rail survives opening hotspot transition');
-    checkHotspots('Interview Invitation');
-    const phone=document.querySelector('.image-hotspot.phone');
-    const email=document.querySelector('.image-hotspot.email');
-    check((phone?.dataset.luLabel||'').toLowerCase().includes('phone'),'Phone hotspot has an intentional label');
-    check((email?.dataset.luLabel||'').toLowerCase().includes('email'),'Email hotspot has an intentional label');
     const nativeNext=document.querySelector('.nav-btn.next');
     const ns=nativeNext&&getComputedStyle(nativeNext);
     check(!!nativeNext&&ns.left.startsWith('-9999')&&ns.pointerEvents==='none'&&ns.opacity==='0','Native forward button is functionally hidden');
@@ -86,6 +81,11 @@
     await wait(160);
     check(state.narrationDone.includes('invitation'),'Rail Skip completes invitation narration through native app logic');
     check(!!rail(),'Rail survives Skip-triggered re-render');
+    checkHotspots('Interview Invitation revealed');
+    const phone=document.querySelector('.image-hotspot.phone');
+    const email=document.querySelector('.image-hotspot.email');
+    check((phone?.dataset.luLabel||'').toLowerCase().includes('phone'),'Phone hotspot has an intentional label');
+    check((email?.dataset.luLabel||'').toLowerCase().includes('email'),'Email hotspot has an intentional label');
 
     await markDoneKeys(['phone','email']);
     checkHotspots('Interview Invitation explored state');
