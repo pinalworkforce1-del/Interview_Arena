@@ -21,7 +21,10 @@
     const replay=add('↺ Replay narration','',()=>{
       const v=activeVideo();
       if(v){v.currentTime=0;v.play().catch(()=>{})}
-      else safeClick(byText('Replay narration'));
+      else{
+        const lesson=document.querySelector('.lesson-modal');
+        safeClick(lesson?byText('Replay narration',lesson):byText('Replay narration',document.querySelector('.topbar')||document));
+      }
     });
     const skip=add('⏭ Skip narration','',()=>{
       const lesson=document.querySelector('.lesson-modal');
@@ -76,7 +79,7 @@
     syncRail(rail);
   }
 
-  function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(ensure)}
+  function schedule(){if(scheduled)return;scheduled=true;setTimeout(ensure,0)}
   const observer=new MutationObserver(schedule);
   observer.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['disabled','hidden','class','src','muted']});
   document.readyState==='loading'?document.addEventListener('DOMContentLoaded',schedule):schedule();
