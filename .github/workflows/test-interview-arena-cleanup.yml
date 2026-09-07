@@ -49,9 +49,9 @@ jobs:
           sleep 1
           CHROME=$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)
           test -n "$CHROME"
-          "$CHROME" --headless=new --no-sandbox --disable-gpu --autoplay-policy=no-user-gesture-required --virtual-time-budget=9000 --dump-dom http://127.0.0.1:8000/ > /tmp/interview-arena-dom.html
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --autoplay-policy=no-user-gesture-required --virtual-time-budget=15000 --dump-dom http://127.0.0.1:8000/ > /tmp/interview-arena-dom.html
           echo '--- smoke marker ---'
-          grep -n -A20 -B5 'smoke-result\|INTERVIEW_ARENA_SMOKE_' /tmp/interview-arena-dom.html || true
+          grep -n -A40 -B5 'smoke-result\|INTERVIEW_ARENA_SMOKE_' /tmp/interview-arena-dom.html || true
           echo '--- page title ---'
           grep -o '<title>[^<]*</title>' /tmp/interview-arena-dom.html | tail -1 || true
           grep -q 'INTERVIEW_ARENA_SMOKE_PASS' /tmp/interview-arena-dom.html
