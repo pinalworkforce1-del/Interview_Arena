@@ -128,6 +128,27 @@
     let rail=wrap.querySelector('.lu-scene-rail');
     if(!rail)rail=buildRail(wrap);
     syncRail(rail);
+    ensureMockInterviewEntry(stage);
+  }
+
+  function ensureMockInterviewEntry(stage){
+    const title=(document.querySelector('.progress-meta span')?.textContent||document.querySelector('.scene-status')?.textContent||'').toLowerCase();
+    const finalScene=/quest complete|scene 11|complete/.test(title);
+    let b=document.getElementById('luMockInterviewEntry');
+    if(!finalScene){if(b)b.remove();return}
+    if(b)return;
+    const nav=stage.querySelector('.navrow')||stage;
+    b=document.createElement('button');
+    b.id='luMockInterviewEntry';
+    b.type='button';
+    b.className='nav-btn next';
+    b.textContent='⚔ Launch AI Mock Interview • 200 XP';
+    b.style.marginLeft='8px';
+    b.addEventListener('click',()=>{
+      const target='https://pinalworkforce1-del.github.io/LU_Discovery/mock-interview.html?mode=selfpaced&returnTo='+encodeURIComponent(location.href);
+      location.href=target;
+    });
+    nav.appendChild(b);
   }
 
   function schedule(){if(scheduled)return;scheduled=true;setTimeout(ensure,0)}
