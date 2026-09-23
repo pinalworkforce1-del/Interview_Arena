@@ -31,6 +31,11 @@ jobs:
               s=s.replace("</body>",'<script defer src="./offline-client.js"></script><script defer src="./offline-progress.js"></script></body>')
           p.write_text(s)
           PY
+      - name: Inspect interview save hooks
+        run: |
+          echo "=== candidate save/sync hooks ==="
+          grep -RInE "module_progress|localStorage|supabase|is_complete|completed_at|journey_state" restored/dist --include='*.js' --include='*.html' | head -n 220 || true
+
       - name: Generate and validate manifest
         run: |
           python3 - <<'PY'
