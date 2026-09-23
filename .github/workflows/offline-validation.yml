@@ -1,0 +1,61 @@
+name: Validate Offline Engine
+
+on:
+  push:
+    branches: ["offline-engine-v1"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore production source
+        run: |
+          cat interview-arena-source.tar.gz.part-* > interview-arena-source.tar.gz
+          mkdir restored
+          tar -xzf interview-arena-source.tar.gz -C restored
+      - name: Add Offline Engine
+        run: |
+          cp offline-sw.js restored/dist/offline-sw.js
+          cp offline-client.js restored/dist/offline-client.js
+          cp offline-progress.js restored/dist/offline-progress.js
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("restored/dist/index.html")
+          s=p.read_text()
+          if "offline-client.js" not in s:
+              s=s.replace("</body>",'<script defer src="./offline-client.js"></script><script defer src="./offline-progress.js"></script></body>')
+          p.write_text(s)
+          PY
+      - name: Inspect interview save hooks
+        run: |
+          echo "=== candidate save/sync hooks ==="
+          grep -RInE "module_progress|localStorage|supabase|is_complete|completed_at|journey_state" restored/dist --include='*.js' --include='*.html' | head -n 220 || true
+
+      - name: Generate and validate manifest
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("restored/dist")
+          rows=[]
+          total=0
+          for p in sorted(root.rglob("*")):
+              if not p.is_file() or p.name=="offline-manifest.json": continue
+              size=p.stat().st_size
+              rows.append({"path":"./"+p.relative_to(root).as_posix(),"bytes":size})
+              total+=size
+          m={"engine":"Level Up Offline Engine","version":"1.0.0","scope":"/Interview_Arena/","totalBytes":total,"files":rows}
+          (root/"offline-manifest.json").write_text(json.dumps(m,indent=2)+"\n")
+          for name in ["index.html","offline-sw.js","offline-client.js","offline-progress.js","offline-manifest.json"]:
+              if not (root/name).exists(): raise SystemExit("Missing "+name)
+          exts=[".js",".css"]
+          for ext in exts:
+              if not any(x["path"].endswith(ext) for x in rows): raise SystemExit("No "+ext+" in manifest")
+          if total < 5_000_000: raise SystemExit("Offline package unexpectedly small")
+          print("Validated",len(rows),"files,",round(total/1024/1024,1),"MB")
+          PY
