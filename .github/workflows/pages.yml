@@ -44,12 +44,13 @@ jobs:
         run: |
           cp offline-sw.js restored/dist/offline-sw.js
           cp offline-client.js restored/dist/offline-client.js
+          cp offline-progress.js restored/dist/offline-progress.js
           python3 - <<'PY'
           from pathlib import Path
           p = Path('restored/dist/index.html')
           s = p.read_text()
           if 'offline-client.js' not in s:
-              s = s.replace('</body>', '<script defer src="./offline-client.js"></script></body>')
+              s = s.replace('</body>', '<script defer src="./offline-client.js"></script><script defer src="./offline-progress.js"></script></body>')
           p.write_text(s)
           PY
 
