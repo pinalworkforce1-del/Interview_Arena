@@ -63,10 +63,16 @@
     wrap.append(rail);
     const add=(label,cls,fn)=>{const b=document.createElement('button');b.type='button';b.textContent=label;if(cls)b.className=cls;b.addEventListener('click',fn);rail.append(b);return b};
 
-    const audio=add('🔊 Audio','',()=>{
+    const audio=add('🔊 Audio on','',()=>{
       const native=q('.controls .icon-btn[aria-label*="Mute"]','.controls .icon-btn[aria-label*="Unmute"]');
       if(native)safeClick(native);else{const v=activeVideo();if(v)v.muted=!v.muted}
       syncRail(rail);
+    });
+    const access=add('◉ Accessibility','',()=>{
+      const native=q('[aria-label*="Accessibility"]','[title*="Accessibility"]')||
+        byText('Accessibility',document.querySelector('.controls')||document)||
+        byText('Accessibility',document.querySelector('.topbar')||document);
+      safeClick(native);
     });
     const replay=add('↺ Replay narration','',()=>{
       const v=activeVideo();
@@ -81,9 +87,10 @@
       const native=lesson?byText('Skip narration',lesson):byText('Skip narration',document.querySelector('.topbar')||document);
       safeClick(native);
     });
-    const play=add('▶ Play / Pause','',()=>{const v=activeVideo();if(v)(v.paused?v.play().catch(()=>{}):v.pause())});
+    const play=add('▶ Play narration','',()=>{const v=activeVideo();if(v)(v.paused?v.play().catch(()=>{}):v.pause())});
+    const back=add('← Back','lu-back',()=>safeClick(document.querySelector('.nav-btn.prev')));
     const cont=add('Continue →','lu-continue',()=>safeClick(document.querySelector('.nav-btn.next')));
-    audio.dataset.role='audio';replay.dataset.role='replay';skip.dataset.role='skip';play.dataset.role='play';cont.dataset.role='continue';
+    audio.dataset.role='audio';access.dataset.role='access';replay.dataset.role='replay';skip.dataset.role='skip';play.dataset.role='play';back.dataset.role='back';cont.dataset.role='continue';
     syncRail(rail);
     return rail;
   }
@@ -92,23 +99,37 @@
     if(!rail||!rail.isConnected)return;
     const v=activeVideo();
     const modal=!!document.querySelector('.modal-backdrop');
+    const prev=document.querySelector('.nav-btn.prev');
     const next=document.querySelector('.nav-btn.next');
+    const nativeAccess=q('[aria-label*="Accessibility"]','[title*="Accessibility"]')||
+      byText('Accessibility',document.querySelector('.controls')||document)||
+      byText('Accessibility',document.querySelector('.topbar')||document);
     const audio=rail.querySelector('[data-role="audio"]');
+    const access=rail.querySelector('[data-role="access"]');
     const replay=rail.querySelector('[data-role="replay"]');
     const skip=rail.querySelector('[data-role="skip"]');
     const play=rail.querySelector('[data-role="play"]');
+    const back=rail.querySelector('[data-role="back"]');
     const cont=rail.querySelector('[data-role="continue"]');
-    if(audio)audio.textContent=v?.muted?'🔇 Audio':'🔊 Audio';
+    if(audio)audio.textContent=v?.muted?'🔇 Audio off':'🔊 Audio on';
+    if(access){access.hidden=!nativeAccess;access.disabled=!nativeAccess}
     const lesson=document.querySelector('.lesson-modal');
     const nativeReplay=lesson?byText('Replay narration',lesson):byText('Replay narration',document.querySelector('.topbar')||document);
     const nativeSkip=lesson?byText('Skip narration',lesson):byText('Skip narration',document.querySelector('.topbar')||document);
     if(replay)replay.disabled=!v&&!nativeReplay;
     if(skip)skip.disabled=!nativeSkip;
-    if(play)play.disabled=!v;
+    if(play){
+      play.disabled=!v;
+      play.textContent=v&&!v.paused&&!v.ended?'Ⅱ Pause narration':'▶ Play narration';
+    }
+    if(back){back.hidden=!prev;back.disabled=!prev||prev.disabled||modal}
     if(cont){
       cont.hidden=!next;
       cont.disabled=!next||next.disabled||modal;
-      if(next)cont.textContent=(next.textContent||'Continue →').trim();
+      if(next){
+        const label=(next.textContent||'Continue →').trim();
+        cont.textContent=/return to my journey/i.test(label)?'Return to Opportunity City →':label;
+      }
     }
   }
 
