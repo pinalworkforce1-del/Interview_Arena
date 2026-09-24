@@ -120,12 +120,14 @@ body.level-up-standard .lu-hotspot-iconized:focus-visible::after{color:#fff;text
 .lu-scene-rail button{min-height:50px;border:1px solid #5c79aa66;border-radius:12px;color:#eef6ff;background:#07132de8;font:800 12px/1.2 Arial,sans-serif;cursor:pointer;text-align:left;padding:10px}
 .lu-scene-rail button:hover:not(:disabled),.lu-scene-rail button:focus-visible:not(:disabled){border-color:#54eaff;outline:2px solid #54eaff55;outline-offset:2px}
 .lu-scene-rail button:disabled{opacity:.35;cursor:not-allowed}
+.lu-scene-rail .lu-back{border-color:#476a9c;background:#0a1736}
 .lu-scene-rail .lu-continue{margin-top:8px;color:#03151c;background:linear-gradient(90deg,#31e5f5,#54efb7);border-color:#54efb7;font-weight:950;text-align:center}
-.lu-scene-rail .lu-continue[hidden]{display:none}
+.lu-scene-rail .lu-back[hidden],.lu-scene-rail .lu-continue[hidden]{display:none}
 
 /* Keep the native controls as the authoritative app hooks, but not as duplicate learner-facing controls. */
 body.level-up-standard .controls .header-action,
 body.level-up-standard .controls .icon-btn:nth-child(2),
+body.level-up-standard .nav-btn.prev,
 body.level-up-standard .nav-btn.next{
   position:absolute!important;width:1px!important;height:1px!important;left:-9999px!important;
   padding:0!important;margin:0!important;border:0!important;opacity:0!important;
