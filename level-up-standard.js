@@ -1,10 +1,9 @@
-/* Level Up UX Standard v2 — canonical Level Up audio + scene controls for packaged Interview Arena */
+/* Level Up UX Standard v3 — canonical controls bound to native Interview Arena learner state */
 (()=>{
   const q=(...selectors)=>selectors.map(s=>document.querySelector(s)).find(Boolean);
   const byText=(needle,scope=document)=>Array.from(scope.querySelectorAll('button')).find(b=>(b.textContent||'').toLowerCase().includes(needle.toLowerCase()));
   const safeClick=el=>{if(el&&!el.disabled)el.click()};
   const activeVideo=()=>q('#lessonNarration','#narration');
-  const videoSourceKey=v=>v?(v.getAttribute('src')||v.currentSrc||''):'';
   const nativeNarrationScope=()=>document.querySelector('.lesson-modal')||document.querySelector('.topbar')||document;
   const nativeAudioControl=()=>q(
     '.controls .icon-btn[aria-label*="Mute"]',
@@ -99,44 +98,24 @@
     document.querySelector('.lu-control-dialog-backdrop')?.remove();
   }
 
-  function readPref(key,defaultValue){
+  function nativeSettings(){
     try{
-      const value=localStorage.getItem(key);
-      return value===null?defaultValue:value==='1';
-    }catch(_){return defaultValue}
+      if(typeof state!=="undefined"){
+        state.settings={auto:true,captions:true,reduce:false,...(state.settings||{})};
+        return state.settings;
+      }
+    }catch(_){}
+    return {auto:true,captions:true,reduce:false};
   }
 
-  function writePref(key,value){
-    try{localStorage.setItem(key,value?'1':'0')}catch(_){}
-  }
-
-  function setCaptionVisibility(show){
-    document.body.classList.toggle('lu-hide-captions',!show);
-    const v=activeVideo();
-    if(v?.textTracks){
-      Array.from(v.textTracks).forEach(track=>{
-        if(!track.kind||track.kind==='captions'||track.kind==='subtitles')track.mode=show?'showing':'hidden';
-      });
-    }
-  }
-
-  function markManualPlay(v){
-    if(v)v.dataset.luManualPlaySrc=videoSourceKey(v);
+  function saveNativeSettings(){
+    try{if(typeof save==="function")save()}catch(_){}
   }
 
   function applyLearningPrefs(){
-    const auto=readPref('lu-interview-auto-narration',true);
-    const captions=readPref('lu-interview-show-captions',true);
-    const reduce=readPref('lu-interview-reduce-motion',false);
-    setCaptionVisibility(captions);
-    document.body.classList.toggle('lu-reduce-motion',reduce);
-    const v=activeVideo();
-    const src=videoSourceKey(v);
-    if(v&&!auto&&v.dataset.luManualPlaySrc!==src&&v.dataset.luAutoSuppressedSrc!==src){
-      v.dataset.luAutoSuppressedSrc=src;
-      v.pause();
-      try{v.currentTime=0}catch(_){}
-    }
+    const settings=nativeSettings();
+    document.body.classList.toggle('lu-hide-captions',!settings.captions);
+    document.body.classList.toggle('lu-reduce-motion',!!settings.reduce);
   }
 
   function openControlDialog(kind){
@@ -171,27 +150,23 @@
       const auto=backdrop.querySelector('#luAutoPlay');
       const captions=backdrop.querySelector('#luShowCaptions');
       const reduce=backdrop.querySelector('#luReduceMotion');
-      auto.checked=readPref('lu-interview-auto-narration',true);
-      captions.checked=readPref('lu-interview-show-captions',true);
-      reduce.checked=readPref('lu-interview-reduce-motion',false);
+      const settings=nativeSettings();
+      auto.checked=!!settings.auto;
+      captions.checked=!!settings.captions;
+      reduce.checked=!!settings.reduce;
       auto.addEventListener('change',()=>{
-        writePref('lu-interview-auto-narration',auto.checked);
-        if(!auto.checked){
-          const v=activeVideo();
-          if(v){
-            v.dataset.luAutoSuppressedSrc=videoSourceKey(v);
-            v.pause();
-            try{v.currentTime=0}catch(_){}
-          }
-        }
+        nativeSettings().auto=auto.checked;
+        saveNativeSettings();
       });
       captions.addEventListener('change',()=>{
-        writePref('lu-interview-show-captions',captions.checked);
-        setCaptionVisibility(captions.checked);
+        nativeSettings().captions=captions.checked;
+        document.body.classList.toggle('lu-hide-captions',!captions.checked);
+        saveNativeSettings();
       });
       reduce.addEventListener('change',()=>{
-        writePref('lu-interview-reduce-motion',reduce.checked);
+        nativeSettings().reduce=reduce.checked;
         document.body.classList.toggle('lu-reduce-motion',reduce.checked);
+        saveNativeSettings();
       });
     }
   }
@@ -214,10 +189,12 @@
     const help=add('Help','',()=>openControlDialog('help'));
     const replay=add('Replay narration','',()=>{
       const native=nativeReplayControl();
-      if(native)safeClick(native);
-      else{
+      if(native){
+        safeClick(native);
+        setTimeout(()=>{const v=activeVideo();if(v){v.currentTime=0;v.play().catch(()=>{})}},0);
+      }else{
         const v=activeVideo();
-        if(v){markManualPlay(v);v.currentTime=0;v.play().catch(()=>{})}
+        if(v){v.currentTime=0;v.play().catch(()=>{})}
       }
     });
     const skip=add('Skip narration','',()=>safeClick(nativeSkipControl()));
@@ -227,7 +204,7 @@
       else{
         const v=activeVideo();
         if(v){
-          if(v.paused){markManualPlay(v);v.play().catch(()=>{})}
+          if(v.paused){v.play().catch(()=>{})}
           else v.pause();
         }
       }
