@@ -37,6 +37,21 @@
   let scheduled=false;
 
   const titleCase=text=>text.replace(/\b([a-z])/g,m=>m.toUpperCase());
+  const sceneDescriptions={
+    entry:'A learner approaches the glowing entrance to Interview Arena, where the interview-preparation quest begins.',
+    invitation:'A phone invitation and an email invitation appear as two ways an employer may contact a candidate.',
+    awareness:'An interview invitation is highlighted while reminders reinforce checking messages and responding promptly.',
+    prepare:'A preparation loadout displays interview essentials including clothing, résumé copies, notes, questions, route planning, and mindset.',
+    energy:'A learner pauses to restore energy and prepare physically and mentally before an interview.',
+    lobby:'A learner enters a workplace lobby and prepares to make a professional first impression with everyone they meet.',
+    one:'A learner faces a one-on-one interview and practices listening, eye contact, and specific responses.',
+    panel:'A learner sits before multiple interviewers and practices engaging the full panel while answering clearly.',
+    virtual:'A learner prepares for a virtual interview with attention to technology, camera position, sound, and surroundings.',
+    follow:'A learner builds a professional follow-up message after an interview.',
+    complete:'A celebratory Interview Arena scene marks completion of the main interview-preparation quest.',
+    reflection:'A learner reviews confidence, strengths, next steps, and coaching needs before leaving Interview Arena.'
+  };
+
   function hotspotLabel(el){
     if(el.classList.contains('arena'))return 'Interview Arena';
     if(el.classList.contains('phone'))return 'Phone Invitation';
@@ -178,11 +193,11 @@
   function nativeSettings(){
     try{
       if(typeof state!=="undefined"){
-        state.settings={auto:true,captions:true,reduce:false,...(state.settings||{})};
+        state.settings={auto:true,captions:true,reduce:false,large:false,playbackRate:1,...(state.settings||{}),auto:true,captions:true};
         return state.settings;
       }
     }catch(_){}
-    return {auto:true,captions:true,reduce:false};
+    return {auto:true,captions:true,reduce:false,large:false,playbackRate:1};
   }
 
   function saveNativeSettings(){
@@ -192,7 +207,7 @@
   function applyLearningPrefs(){
     const settings=nativeSettings();
     document.body.classList.toggle('lu-hide-captions',!settings.captions);
-    document.body.classList.toggle('lu-reduce-motion',!!settings.reduce);
+    document.body.classList.toggle('lu-reduce-motion',!!settings.reduce);document.body.classList.toggle('lu-large-text',!!settings.large);const v=activeVideo();if(v)v.playbackRate=Number(settings.playbackRate||1);
   }
 
   function openControlDialog(kind){
@@ -200,11 +215,19 @@
     const backdrop=document.createElement('div');
     backdrop.className='lu-control-dialog-backdrop';
     backdrop.innerHTML=kind==='access'
-      ? `<section class="lu-control-dialog" role="dialog" aria-modal="true" aria-label="Accessibility">
-          <header><div><small>ACCESSIBILITY</small><h2>Choose how you learn</h2></div><button type="button" class="lu-dialog-close" aria-label="Close">×</button></header>
-          <label class="lu-switch-row"><span>Play narration automatically</span><input id="luAutoPlay" type="checkbox"></label>
-          <label class="lu-switch-row"><span>Show visual captions</span><input id="luShowCaptions" type="checkbox"></label>
-          <label class="lu-switch-row"><span>Reduce motion</span><input id="luReduceMotion" type="checkbox"></label>
+      ? `<section class="lu-control-dialog lu-accessibility-dialog" role="dialog" aria-modal="true" aria-label="Accessibility">
+          <header><div><small>ACCESSIBILITY • SCENE ${typeof state!=='undefined'?state.scene+1:1} OF ${typeof scenes!=='undefined'?scenes.length:12}</small><h2>${typeof state!=='undefined'&&scenes?.[state.scene]?scenes[state.scene].title:'Interview Arena'}</h2></div><button type="button" class="lu-dialog-close" aria-label="Close">×</button></header>
+          <p class="lu-access-intro">Adjust the experience at any time. Your choices are saved with your Level Up progress.</p>
+          <section class="lu-scene-description"><div><span aria-hidden="true">◉</span><strong>Describe this scene</strong></div><p>${typeof state!=='undefined'&&scenes?.[state.scene]?sceneDescriptions[scenes[state.scene].id]||'Interview preparation scene.':'Interview preparation scene.'}</p></section>
+          <div class="lu-access-options">
+            <label class="lu-preference-row"><span><strong>Larger interface text</strong><small>Increases controls and readable text without changing the artwork.</small></span><input id="luLargeText" type="checkbox"></label>
+            <label class="lu-preference-row"><span><strong>Reduce motion</strong><small>Turns off pulses, flips, and decorative movement.</small></span><input id="luReduceMotion" type="checkbox"></label>
+            <fieldset class="lu-speed-options"><legend>Narration speed</legend><div>
+              <button type="button" data-rate="0.75">0.75×</button><button type="button" data-rate="1">1×</button><button type="button" data-rate="1.25">1.25×</button><button type="button" data-rate="1.5">1.5×</button>
+            </div></fieldset>
+          </div>
+          <p class="lu-caption-note">Captions appear with every narration video. You can pause, replay, mute, change speed, or skip narration without losing access to the scene.</p>
+          <button type="button" class="lu-access-return">Return to Interview Arena</button>
         </section>`
       : `<section class="lu-control-dialog" role="dialog" aria-modal="true" aria-label="Interview Arena help">
           <header><div><small>HELP</small><h2>Interview Arena controls</h2></div><button type="button" class="lu-dialog-close" aria-label="Close">×</button></header>
@@ -224,20 +247,16 @@
     backdrop.querySelector('.lu-dialog-close')?.addEventListener('click',closeControlDialog);
     backdrop.addEventListener('click',e=>{if(e.target===backdrop)closeControlDialog()});
     if(kind==='access'){
-      const auto=backdrop.querySelector('#luAutoPlay');
-      const captions=backdrop.querySelector('#luShowCaptions');
+      const large=backdrop.querySelector('#luLargeText');
       const reduce=backdrop.querySelector('#luReduceMotion');
       const settings=nativeSettings();
-      auto.checked=!!settings.auto;
-      captions.checked=!!settings.captions;
+      large.checked=!!settings.large;
       reduce.checked=!!settings.reduce;
-      auto.addEventListener('change',()=>{
-        nativeSettings().auto=auto.checked;
-        saveNativeSettings();
-      });
-      captions.addEventListener('change',()=>{
-        nativeSettings().captions=captions.checked;
-        document.body.classList.toggle('lu-hide-captions',!captions.checked);
+      const syncRates=()=>backdrop.querySelectorAll('[data-rate]').forEach(button=>button.classList.toggle('selected',Number(button.dataset.rate)===Number(nativeSettings().playbackRate||1)));
+      syncRates();
+      large.addEventListener('change',()=>{
+        nativeSettings().large=large.checked;
+        document.body.classList.toggle('lu-large-text',large.checked);
         saveNativeSettings();
       });
       reduce.addEventListener('change',()=>{
@@ -245,6 +264,13 @@
         document.body.classList.toggle('lu-reduce-motion',reduce.checked);
         saveNativeSettings();
       });
+      backdrop.querySelectorAll('[data-rate]').forEach(button=>button.addEventListener('click',()=>{
+        nativeSettings().playbackRate=Number(button.dataset.rate)||1;
+        const v=activeVideo();if(v)v.playbackRate=nativeSettings().playbackRate;
+        syncRates();
+        saveNativeSettings();
+      }));
+      backdrop.querySelector('.lu-access-return')?.addEventListener('click',closeControlDialog);
     }
   }
 
