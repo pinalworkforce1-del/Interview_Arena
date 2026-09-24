@@ -1,4 +1,4 @@
-/* Level Up UX Standard v2 — canonical Interview Arena controls, captions, and legacy-control proxying */
+/* Level Up UX Standard v3 — canonical Interview Arena controls bound to native learner state */
 :root{--lu-rail:190px}
 body.level-up-standard{overflow-x:hidden}
 body.level-up-standard #root>main,body.level-up-standard main.app,body.level-up-standard .app,body.level-up-standard main.shell{max-width:1740px;margin-inline:auto}
@@ -171,6 +171,14 @@ body.lu-hide-captions .caption-text,
 body.lu-hide-captions .visual-caption{
   opacity:0!important;
   visibility:hidden!important
+}
+/* Interview Arena narration MP4s are transparent caption layers over the scene artwork.
+   Hiding the video visually preserves narration audio while removing visual captions. */
+body.lu-hide-captions video.narration{opacity:0!important}
+body.level-up-standard .play-fallback{
+  position:absolute!important;width:1px!important;height:1px!important;left:-9999px!important;
+  padding:0!important;margin:0!important;border:0!important;opacity:0!important;
+  pointer-events:none!important;overflow:hidden!important
 }
 body.lu-reduce-motion *,body.lu-reduce-motion *::before,body.lu-reduce-motion *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 @media(max-width:650px){.lu-control-dialog{padding:18px;border-radius:16px}}
