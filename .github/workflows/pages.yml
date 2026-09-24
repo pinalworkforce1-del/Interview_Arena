@@ -28,18 +28,38 @@ jobs:
           cat interview-arena-source.tar.gz.part-* > interview-arena-source.tar.gz
           mkdir restored
           tar -xzf interview-arena-source.tar.gz -C restored
-      - name: Apply Level Up UX Standard v1
+      - name: Apply Level Up UX Standard v2
         run: |
-          cp level-up-standard.css restored/dist/level-up-standard.css
-          cp level-up-standard.js restored/dist/level-up-standard.js
+          VERSION="${GITHUB_SHA:0:12}"
+          cp level-up-standard.css "restored/dist/level-up-standard.${VERSION}.css"
+          cp level-up-standard.js "restored/dist/level-up-standard.${VERSION}.js"
           python3 - <<'PY'
+          import os
+          import re
           from pathlib import Path
+
+          version = os.environ['GITHUB_SHA'][:12]
           p = Path('restored/dist/index.html')
           s = p.read_text()
-          s = s.replace('</head>', '<link rel="stylesheet" href="./level-up-standard.css"></head>')
-          s = s.replace('</body>', '<script src="./level-up-standard.js"></script></body>')
+
+          # Remove any previously injected Level Up standard assets/marker before inserting this build.
+          s = re.sub(r'<meta name="level-up-standard-version" content="[^"]*">', '', s)
+          s = re.sub(r'<link rel="stylesheet" href="\./level-up-standard(?:\.[^"]+)?\.css">', '', s)
+          s = re.sub(r'<script src="\./level-up-standard(?:\.[^"]+)?\.js"></script>', '', s)
+
+          css_name = f'level-up-standard.{version}.css'
+          js_name = f'level-up-standard.{version}.js'
+          s = s.replace(
+              '</head>',
+              f'<meta name="level-up-standard-version" content="{version}"><link rel="stylesheet" href="./{css_name}"></head>'
+          )
+          s = s.replace('</body>', f'<script src="./{js_name}"></script></body>')
           p.write_text(s)
           PY
+          grep -q "level-up-standard.${VERSION}.css" restored/dist/index.html
+          grep -q "level-up-standard.${VERSION}.js" restored/dist/index.html
+          test -f "restored/dist/level-up-standard.${VERSION}.css"
+          test -f "restored/dist/level-up-standard.${VERSION}.js"
       - name: Add Offline Engine
         run: |
           cp offline-sw.js restored/dist/offline-sw.js
