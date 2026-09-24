@@ -68,6 +68,31 @@
     document.querySelector('.lu-control-dialog-backdrop')?.remove();
   }
 
+  function readPref(key,defaultValue){
+    try{
+      const value=localStorage.getItem(key);
+      return value===null?defaultValue:value==='1';
+    }catch(_){return defaultValue}
+  }
+
+  function writePref(key,value){
+    try{localStorage.setItem(key,value?'1':'0')}catch(_){}
+  }
+
+  function applyLearningPrefs(){
+    const auto=readPref('lu-interview-auto-narration',true);
+    const captions=readPref('lu-interview-show-captions',true);
+    const reduce=readPref('lu-interview-reduce-motion',false);
+    document.body.classList.toggle('lu-hide-captions',!captions);
+    document.body.classList.toggle('lu-reduce-motion',reduce);
+    const v=activeVideo();
+    if(v&&!auto&&!v.dataset.luManualPlay&&!v.dataset.luAutoSuppressed){
+      v.dataset.luAutoSuppressed='1';
+      v.pause();
+      try{v.currentTime=0}catch(_){}
+    }
+  }
+
   function openControlDialog(kind){
     closeControlDialog();
     const backdrop=document.createElement('div');
@@ -75,15 +100,15 @@
     backdrop.innerHTML=kind==='access'
       ? `<section class="lu-control-dialog" role="dialog" aria-modal="true" aria-label="Accessibility">
           <header><div><small>ACCESSIBILITY</small><h2>Choose how you learn</h2></div><button type="button" class="lu-dialog-close" aria-label="Close">×</button></header>
-          <label class="lu-switch-row"><span><b>Larger text & stronger borders</b><small>Increase text size and strengthen key borders.</small></span><input id="luLargeText" type="checkbox"></label>
-          <label class="lu-switch-row"><span><b>Reduce motion</b><small>Turn off pulsing hotspot and transition effects.</small></span><input id="luReduceMotion" type="checkbox"></label>
-          <p class="lu-dialog-note">Narration can be replayed, skipped, paused, or muted from Scene Controls. Captions are included with narrated media.</p>
+          <label class="lu-switch-row"><span>Play narration automatically</span><input id="luAutoPlay" type="checkbox"></label>
+          <label class="lu-switch-row"><span>Show visual captions</span><input id="luShowCaptions" type="checkbox"></label>
+          <label class="lu-switch-row"><span>Reduce motion</span><input id="luReduceMotion" type="checkbox"></label>
         </section>`
       : `<section class="lu-control-dialog" role="dialog" aria-modal="true" aria-label="Interview Arena help">
           <header><div><small>HELP</small><h2>Interview Arena controls</h2></div><button type="button" class="lu-dialog-close" aria-label="Close">×</button></header>
           <div class="lu-help-guide">
             <p><b>Audio</b> turns narration sound on or off.</p>
-            <p><b>Accessibility</b> opens display options for larger text, stronger borders, and reduced motion.</p>
+            <p><b>Accessibility</b> lets you control narration autoplay, visual captions, and motion.</p>
             <p><b>Replay narration</b> restarts the current narration from the beginning.</p>
             <p><b>Skip narration</b> moves past narration so you can begin the scene activity.</p>
             <p><b>Play narration</b> plays or pauses the current narration.</p>
@@ -95,20 +120,26 @@
     backdrop.querySelector('.lu-dialog-close')?.addEventListener('click',closeControlDialog);
     backdrop.addEventListener('click',e=>{if(e.target===backdrop)closeControlDialog()});
     if(kind==='access'){
-      const large=backdrop.querySelector('#luLargeText');
+      const auto=backdrop.querySelector('#luAutoPlay');
+      const captions=backdrop.querySelector('#luShowCaptions');
       const reduce=backdrop.querySelector('#luReduceMotion');
-      large.checked=document.body.classList.contains('a11y');
-      reduce.checked=document.body.classList.contains('lu-reduce-motion');
-      large.addEventListener('change',()=>{
-        const on=document.body.classList.contains('a11y');
-        if(large.checked!==on){
-          if(typeof window.toggleA11y==='function')window.toggleA11y();
-          else document.body.classList.toggle('a11y',large.checked);
+      auto.checked=readPref('lu-interview-auto-narration',true);
+      captions.checked=readPref('lu-interview-show-captions',true);
+      reduce.checked=readPref('lu-interview-reduce-motion',false);
+      auto.addEventListener('change',()=>{
+        writePref('lu-interview-auto-narration',auto.checked);
+        if(!auto.checked){
+          const v=activeVideo();
+          if(v){v.dataset.luAutoSuppressed='1';v.pause();try{v.currentTime=0}catch(_){}}
         }
       });
+      captions.addEventListener('change',()=>{
+        writePref('lu-interview-show-captions',captions.checked);
+        document.body.classList.toggle('lu-hide-captions',!captions.checked);
+      });
       reduce.addEventListener('change',()=>{
+        writePref('lu-interview-reduce-motion',reduce.checked);
         document.body.classList.toggle('lu-reduce-motion',reduce.checked);
-        try{localStorage.setItem('lu-interview-reduce-motion',reduce.checked?'1':'0')}catch(_){}
       });
     }
   }
@@ -129,7 +160,7 @@
     const help=add('? Help','',()=>openControlDialog('help'));
     const replay=add('↺ Replay narration','',()=>{
       const v=activeVideo();
-      if(v){v.currentTime=0;v.play().catch(()=>{})}
+      if(v){v.dataset.luManualPlay='1';v.currentTime=0;v.play().catch(()=>{})}
       else{
         const lesson=document.querySelector('.lesson-modal');
         safeClick(lesson?byText('Replay narration',lesson):byText('Replay narration',document.querySelector('.topbar')||document));
@@ -140,7 +171,7 @@
       const native=lesson?byText('Skip narration',lesson):byText('Skip narration',document.querySelector('.topbar')||document);
       safeClick(native);
     });
-    const play=add('▶ Play narration','',()=>{const v=activeVideo();if(v)(v.paused?v.play().catch(()=>{}):v.pause())});
+    const play=add('▶ Play narration','',()=>{const v=activeVideo();if(v){if(v.paused){v.dataset.luManualPlay='1';v.play().catch(()=>{})}else v.pause()}});
     const back=add('← Back','lu-back',()=>safeClick(findNativeBack()));
     const cont=add('Continue →','lu-continue',()=>safeClick(document.querySelector('.nav-btn.next')));
     audio.dataset.role='audio';access.dataset.role='access';help.dataset.role='help';replay.dataset.role='replay';skip.dataset.role='skip';play.dataset.role='play';back.dataset.role='back';cont.dataset.role='continue';
@@ -151,7 +182,7 @@
   function syncRail(rail=document.querySelector('.lu-scene-rail')){
     if(!rail||!rail.isConnected)return;
     const v=activeVideo();
-    const modal=!!document.querySelector('.modal-backdrop');
+    const modal=!!document.querySelector('.modal-backdrop,.lu-control-dialog-backdrop');
     const prev=findNativeBack();
     const next=document.querySelector('.nav-btn.next');
     const audio=rail.querySelector('[data-role="audio"]');
@@ -200,7 +231,7 @@
     if(!rail)rail=buildRail(wrap);
     const nativeBack=findNativeBack();
     if(nativeBack)nativeBack.classList.add('lu-native-nav-hidden');
-    try{document.body.classList.toggle('lu-reduce-motion',localStorage.getItem('lu-interview-reduce-motion')==='1')}catch(_){}
+    applyLearningPrefs();
     syncRail(rail);
     ensureMockInterviewEntry(stage);
   }
