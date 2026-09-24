@@ -1,9 +1,40 @@
-/* Level Up UX Standard v1 — resilient adapter for packaged Interview Arena */
+/* Level Up UX Standard v2 — canonical Level Up audio + scene controls for packaged Interview Arena */
 (()=>{
   const q=(...selectors)=>selectors.map(s=>document.querySelector(s)).find(Boolean);
   const byText=(needle,scope=document)=>Array.from(scope.querySelectorAll('button')).find(b=>(b.textContent||'').toLowerCase().includes(needle.toLowerCase()));
   const safeClick=el=>{if(el&&!el.disabled)el.click()};
   const activeVideo=()=>q('#lessonNarration','#narration');
+  const videoSourceKey=v=>v?(v.getAttribute('src')||v.currentSrc||''):'';
+  const nativeNarrationScope=()=>document.querySelector('.lesson-modal')||document.querySelector('.topbar')||document;
+  const nativeAudioControl=()=>q(
+    '.controls .icon-btn[aria-label*="Mute"]',
+    '.controls .icon-btn[aria-label*="Unmute"]',
+    '.controls button[aria-label*="Audio"]',
+    '.topbar button[aria-label*="Mute"]',
+    '.topbar button[aria-label*="Unmute"]'
+  );
+  const nativeAccessibilityControl=()=>{
+    const scope=document.querySelector('.controls')||document.querySelector('.topbar')||document;
+    return scope.querySelector('button[aria-label*="Access"]')||byText('Accessibility',scope)||null;
+  };
+  const nativeReplayControl=()=>byText('Replay narration',nativeNarrationScope())||null;
+  const nativeSkipControl=()=>byText('Skip narration',nativeNarrationScope())||null;
+  const nativePlayPauseControl=()=>{
+    const scope=nativeNarrationScope();
+    return byText('Pause narration',scope)||byText('Play narration',scope)||byText('Listen to narration',scope)||null;
+  };
+  const nativeHeaderHelp=()=>{
+    const scope=document.querySelector('.controls')||document.querySelector('.topbar');
+    return scope?(scope.querySelector('button[aria-label*="Help"]')||byText('Help',scope)||null):null;
+  };
+  const audioIsMuted=()=>{
+    const v=activeVideo();
+    if(v)return !!v.muted;
+    const native=nativeAudioControl();
+    const label=((native?.getAttribute('aria-label')||native?.textContent||'')+'').toLowerCase();
+    return /unmute|audio off/.test(label);
+  };
+  const markLegacyControl=el=>{if(el&&!el.closest('.lu-scene-rail'))el.classList.add('lu-native-control-hidden')};
   let scheduled=false;
 
   const titleCase=text=>text.replace(/\b([a-z])/g,m=>m.toUpperCase());
@@ -79,15 +110,30 @@
     try{localStorage.setItem(key,value?'1':'0')}catch(_){}
   }
 
+  function setCaptionVisibility(show){
+    document.body.classList.toggle('lu-hide-captions',!show);
+    const v=activeVideo();
+    if(v?.textTracks){
+      Array.from(v.textTracks).forEach(track=>{
+        if(!track.kind||track.kind==='captions'||track.kind==='subtitles')track.mode=show?'showing':'hidden';
+      });
+    }
+  }
+
+  function markManualPlay(v){
+    if(v)v.dataset.luManualPlaySrc=videoSourceKey(v);
+  }
+
   function applyLearningPrefs(){
     const auto=readPref('lu-interview-auto-narration',true);
     const captions=readPref('lu-interview-show-captions',true);
     const reduce=readPref('lu-interview-reduce-motion',false);
-    document.body.classList.toggle('lu-hide-captions',!captions);
+    setCaptionVisibility(captions);
     document.body.classList.toggle('lu-reduce-motion',reduce);
     const v=activeVideo();
-    if(v&&!auto&&!v.dataset.luManualPlay&&!v.dataset.luAutoSuppressed){
-      v.dataset.luAutoSuppressed='1';
+    const src=videoSourceKey(v);
+    if(v&&!auto&&v.dataset.luManualPlaySrc!==src&&v.dataset.luAutoSuppressedSrc!==src){
+      v.dataset.luAutoSuppressedSrc=src;
       v.pause();
       try{v.currentTime=0}catch(_){}
     }
@@ -114,6 +160,8 @@
             <p><b>Play narration</b> plays or pauses the current narration.</p>
             <p><b>Back</b> returns to the previous scene without clearing your saved progress.</p>
             <p><b>Continue</b> becomes available after required scene interactions are complete.</p>
+            <p><b>Interview Arena activity:</b> use the visible ✦ cues to explore required interview-prep hotspots. A ✓ shows an item you have already explored.</p>
+            <p>Your existing scene gates, XP, saved progress, and completion rules stay in effect while you use these controls.</p>
           </div>
         </section>`;
     document.body.append(backdrop);
@@ -130,12 +178,16 @@
         writePref('lu-interview-auto-narration',auto.checked);
         if(!auto.checked){
           const v=activeVideo();
-          if(v){v.dataset.luAutoSuppressed='1';v.pause();try{v.currentTime=0}catch(_){}}
+          if(v){
+            v.dataset.luAutoSuppressedSrc=videoSourceKey(v);
+            v.pause();
+            try{v.currentTime=0}catch(_){}
+          }
         }
       });
       captions.addEventListener('change',()=>{
         writePref('lu-interview-show-captions',captions.checked);
-        document.body.classList.toggle('lu-hide-captions',!captions.checked);
+        setCaptionVisibility(captions.checked);
       });
       reduce.addEventListener('change',()=>{
         writePref('lu-interview-reduce-motion',reduce.checked);
@@ -151,28 +203,37 @@
     wrap.append(rail);
     const add=(label,cls,fn)=>{const b=document.createElement('button');b.type='button';b.textContent=label;if(cls)b.className=cls;b.addEventListener('click',fn);rail.append(b);return b};
 
-    const audio=add('🔊 Audio on','',()=>{
-      const native=q('.controls .icon-btn[aria-label*="Mute"]','.controls .icon-btn[aria-label*="Unmute"]');
-      if(native)safeClick(native);else{const v=activeVideo();if(v)v.muted=!v.muted}
+    const audio=add('Audio on','',()=>{
+      const native=nativeAudioControl();
+      if(native)safeClick(native);
+      else{const v=activeVideo();if(v)v.muted=!v.muted}
       syncRail(rail);
+      setTimeout(()=>syncRail(rail),0);
     });
-    const access=add('◉ Accessibility','',()=>openControlDialog('access'));
-    const help=add('? Help','',()=>openControlDialog('help'));
-    const replay=add('↺ Replay narration','',()=>{
-      const v=activeVideo();
-      if(v){v.dataset.luManualPlay='1';v.currentTime=0;v.play().catch(()=>{})}
+    const access=add('Accessibility','',()=>openControlDialog('access'));
+    const help=add('Help','',()=>openControlDialog('help'));
+    const replay=add('Replay narration','',()=>{
+      const native=nativeReplayControl();
+      if(native)safeClick(native);
       else{
-        const lesson=document.querySelector('.lesson-modal');
-        safeClick(lesson?byText('Replay narration',lesson):byText('Replay narration',document.querySelector('.topbar')||document));
+        const v=activeVideo();
+        if(v){markManualPlay(v);v.currentTime=0;v.play().catch(()=>{})}
       }
     });
-    const skip=add('⏭ Skip narration','',()=>{
-      const lesson=document.querySelector('.lesson-modal');
-      const native=lesson?byText('Skip narration',lesson):byText('Skip narration',document.querySelector('.topbar')||document);
-      safeClick(native);
+    const skip=add('Skip narration','',()=>safeClick(nativeSkipControl()));
+    const play=add('Play narration','',()=>{
+      const native=nativePlayPauseControl();
+      if(native)safeClick(native);
+      else{
+        const v=activeVideo();
+        if(v){
+          if(v.paused){markManualPlay(v);v.play().catch(()=>{})}
+          else v.pause();
+        }
+      }
+      setTimeout(()=>syncRail(rail),0);
     });
-    const play=add('▶ Play narration','',()=>{const v=activeVideo();if(v){if(v.paused){v.dataset.luManualPlay='1';v.play().catch(()=>{})}else v.pause()}});
-    const back=add('← Back','lu-back',()=>safeClick(findNativeBack()));
+    const back=add('Back','lu-back',()=>safeClick(findNativeBack()));
     const cont=add('Continue →','lu-continue',()=>safeClick(document.querySelector('.nav-btn.next')));
     audio.dataset.role='audio';access.dataset.role='access';help.dataset.role='help';replay.dataset.role='replay';skip.dataset.role='skip';play.dataset.role='play';back.dataset.role='back';cont.dataset.role='continue';
     syncRail(rail);
@@ -192,26 +253,52 @@
     const play=rail.querySelector('[data-role="play"]');
     const back=rail.querySelector('[data-role="back"]');
     const cont=rail.querySelector('[data-role="continue"]');
-    if(audio)audio.textContent=v?.muted?'🔇 Audio off':'🔊 Audio on';
+    if(audio)audio.textContent=audioIsMuted()?'Audio off':'Audio on';
     if(access){access.hidden=false;access.disabled=false}
-    const lesson=document.querySelector('.lesson-modal');
-    const nativeReplay=lesson?byText('Replay narration',lesson):byText('Replay narration',document.querySelector('.topbar')||document);
-    const nativeSkip=lesson?byText('Skip narration',lesson):byText('Skip narration',document.querySelector('.topbar')||document);
+    const nativeReplay=nativeReplayControl();
+    const nativeSkip=nativeSkipControl();
+    const nativePlay=nativePlayPauseControl();
     if(replay)replay.disabled=!v&&!nativeReplay;
     if(skip)skip.disabled=!nativeSkip;
     if(play){
-      play.disabled=!v;
-      play.textContent=v&&!v.paused&&!v.ended?'Ⅱ Pause narration':'▶ Play narration';
+      play.disabled=!v&&!nativePlay;
+      const nativeLabel=((nativePlay?.getAttribute('aria-label')||nativePlay?.textContent||'')+'').toLowerCase();
+      const playing=v?!v.paused&&!v.ended:/pause narration/.test(nativeLabel);
+      play.textContent=playing?'Pause narration':'Play narration';
     }
-    if(back){back.hidden=!prev;back.disabled=!prev||prev.disabled||modal}
+    if(back){
+      back.hidden=false;
+      back.disabled=!prev||prev.disabled||modal;
+    }
     if(cont){
-      cont.hidden=!next;
+      cont.hidden=false;
       cont.disabled=!next||next.disabled||modal;
       if(next){
         const label=(next.textContent||'Continue →').trim();
-        cont.textContent=/return to my journey/i.test(label)?'Return to Opportunity City →':label;
-      }
+        cont.textContent=/return to (my journey|opportunity city)/i.test(label)?'Return to Opportunity City →':label;
+      }else cont.textContent='Continue →';
     }
+  }
+
+  function hideLegacyControls(){
+    [
+      nativeAudioControl(),
+      nativeAccessibilityControl(),
+      nativeReplayControl(),
+      nativeSkipControl(),
+      nativePlayPauseControl()
+    ].forEach(markLegacyControl);
+  }
+
+  function bindHeaderHelp(){
+    const button=nativeHeaderHelp();
+    if(!button||button.dataset.luStandardHelp==='1')return;
+    button.dataset.luStandardHelp='1';
+    button.addEventListener('click',event=>{
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      openControlDialog('help');
+    },true);
   }
 
   function ensure(){
@@ -231,6 +318,8 @@
     if(!rail)rail=buildRail(wrap);
     const nativeBack=findNativeBack();
     if(nativeBack)nativeBack.classList.add('lu-native-nav-hidden');
+    hideLegacyControls();
+    bindHeaderHelp();
     applyLearningPrefs();
     syncRail(rail);
     ensureMockInterviewEntry(stage);
