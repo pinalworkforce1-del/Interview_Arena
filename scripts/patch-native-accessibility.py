@@ -14,13 +14,13 @@ def replace_once(old: str, new: str, label: str) -> None:
 
 replace_once(
     "const initial={scene:0,xp:0,earned:[],done:[],narrationDone:[],answers:{},flips:[],videos:[],reflection:{confidence:'',strength:'',next:'',coach:''},complete:false,startedAt:new Date().toISOString(),savedAt:new Date().toISOString()};",
-    "const initial={scene:0,xp:0,earned:[],done:[],narrationDone:[],answers:{},flips:[],videos:[],reflection:{confidence:'',strength:'',next:'',coach:''},complete:false,settings:{auto:true,captions:true,reduce:false},startedAt:new Date().toISOString(),savedAt:new Date().toISOString()};",
+    "const initial={scene:0,xp:0,earned:[],done:[],narrationDone:[],answers:{},flips:[],videos:[],reflection:{confidence:'',strength:'',next:'',coach:''},complete:false,settings:{auto:true,captions:true,reduce:false,large:false,playbackRate:1},startedAt:new Date().toISOString(),savedAt:new Date().toISOString()};",
     "native state",
 )
 
 replace_once(
     "document.body.classList.toggle('a11y',a11y);",
-    "document.body.classList.toggle('a11y',a11y);document.body.classList.toggle('lu-hide-captions',!state.settings.captions);document.body.classList.toggle('lu-reduce-motion',!!state.settings.reduce);",
+    "document.body.classList.toggle('a11y',a11y);state.settings={auto:true,captions:true,reduce:false,large:false,playbackRate:1,...(state.settings||{}),auto:true,captions:true};document.body.classList.toggle('lu-hide-captions',!state.settings.captions);document.body.classList.toggle('lu-reduce-motion',!!state.settings.reduce);document.body.classList.toggle('lu-large-text',!!state.settings.large);",
     "render preference classes",
 )
 
@@ -36,7 +36,7 @@ source = source.replace(
 
 replace_once(
     "function startActiveVideo(){const v=document.getElementById('narration')||document.getElementById('lessonNarration');if(!v)return;v.muted=muted;v.play().catch(()=>showPlayFallback(v))}",
-    "function startActiveVideo(){const v=document.getElementById('narration')||document.getElementById('lessonNarration');if(!v)return;v.muted=muted;if(state.settings.auto)v.play().catch(()=>showPlayFallback(v));else showPlayFallback(v)}",
+    "function startActiveVideo(){const v=document.getElementById('narration')||document.getElementById('lessonNarration');if(!v)return;v.muted=muted;v.playbackRate=Number(state.settings.playbackRate||1);if(state.settings.auto)v.play().catch(()=>showPlayFallback(v));else showPlayFallback(v)}",
     "narration lifecycle",
 )
 
