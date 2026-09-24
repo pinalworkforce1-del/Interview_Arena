@@ -1,4 +1,4 @@
-/* Level Up UX Standard v4 — master Level Up shell + controls bound to native Interview Arena learner state */
+/* Level Up UX Standard v5 — master Level Up shell + gold-standard scene rail bound to native Interview Arena learner state */
 (()=>{
   const q=(...selectors)=>selectors.map(s=>document.querySelector(s)).find(Boolean);
   const byText=(needle,scope=document)=>Array.from(scope.querySelectorAll('button')).find(b=>(b.textContent||'').toLowerCase().includes(needle.toLowerCase()));
@@ -237,7 +237,7 @@
             <p><b>Replay narration</b> restarts the current narration from the beginning.</p>
             <p><b>Skip narration</b> moves past narration so you can begin the scene activity.</p>
             <p><b>Play narration</b> plays or pauses the current narration.</p>
-            <p><b>Back</b> returns to the previous scene without clearing your saved progress.</p>
+            <p><b>Previous scene</b> returns to the prior scene without clearing your saved progress.</p>
             <p><b>Continue</b> becomes available after required scene interactions are complete.</p>
             <p><b>Interview Arena activity:</b> use the visible ✦ cues to explore required interview-prep hotspots. A ✓ shows an item you have already explored.</p>
             <p>Your existing scene gates, XP, saved progress, and completion rules stay in effect while you use these controls.</p>
@@ -281,16 +281,16 @@
     wrap.append(rail);
     const add=(label,cls,fn)=>{const b=document.createElement('button');b.type='button';b.textContent=label;if(cls)b.className=cls;b.addEventListener('click',fn);rail.append(b);return b};
 
-    const audio=add('Audio on','',()=>{
+    const back=add('← Previous scene','lu-back',()=>safeClick(findNativeBack()));
+    const audio=add('🔊 Audio on','',()=>{
       const native=nativeAudioControl();
       if(native)safeClick(native);
       else{const v=activeVideo();if(v)v.muted=!v.muted}
       syncRail(rail);
       setTimeout(()=>syncRail(rail),0);
     });
-    const access=add('Accessibility','',()=>openControlDialog('access'));
-    const help=add('Help','',()=>openControlDialog('help'));
-    const replay=add('Replay narration','',()=>{
+    const access=add('◉ Accessibility','',()=>openControlDialog('access'));
+    const replay=add('↻ Replay narration','',()=>{
       const native=nativeReplayControl();
       if(native){
         safeClick(native);
@@ -300,8 +300,8 @@
         if(v){v.currentTime=0;v.play().catch(()=>{})}
       }
     });
-    const skip=add('Skip narration','',()=>safeClick(nativeSkipControl()));
-    const play=add('Play narration','',()=>{
+    const skip=add('⇥ Skip narration','',()=>safeClick(nativeSkipControl()));
+    const play=add('▶ Play narration','',()=>{
       const native=nativePlayPauseControl();
       if(native)safeClick(native);
       else{
@@ -313,9 +313,8 @@
       }
       setTimeout(()=>syncRail(rail),0);
     });
-    const back=add('Back','lu-back',()=>safeClick(findNativeBack()));
     const cont=add('Continue →','lu-continue',()=>safeClick(document.querySelector('.nav-btn.next')));
-    audio.dataset.role='audio';access.dataset.role='access';help.dataset.role='help';replay.dataset.role='replay';skip.dataset.role='skip';play.dataset.role='play';back.dataset.role='back';cont.dataset.role='continue';
+    back.dataset.role='back';audio.dataset.role='audio';access.dataset.role='access';replay.dataset.role='replay';skip.dataset.role='skip';play.dataset.role='play';cont.dataset.role='continue';
     syncRail(rail);
     return rail;
   }
@@ -333,7 +332,7 @@
     const play=rail.querySelector('[data-role="play"]');
     const back=rail.querySelector('[data-role="back"]');
     const cont=rail.querySelector('[data-role="continue"]');
-    if(audio)audio.textContent=audioIsMuted()?'Audio off':'Audio on';
+    if(audio)audio.textContent=audioIsMuted()?'🔇 Audio off':'🔊 Audio on';
     if(access){access.hidden=false;access.disabled=false}
     const nativeReplay=nativeReplayControl();
     const nativeSkip=nativeSkipControl();
@@ -344,7 +343,7 @@
       play.disabled=!v&&!nativePlay;
       const nativeLabel=((nativePlay?.getAttribute('aria-label')||nativePlay?.textContent||'')+'').toLowerCase();
       const playing=v?!v.paused&&!v.ended:/pause narration/.test(nativeLabel);
-      play.textContent=playing?'Pause narration':'Play narration';
+      play.textContent=playing?'⏸ Pause narration':'▶ Play narration';
     }
     if(back){
       back.hidden=false;
