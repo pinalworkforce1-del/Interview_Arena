@@ -231,3 +231,27 @@ body.level-up-standard .lu-clear{width:36px;min-width:36px;padding:.5rem}
   body.level-up-standard .topbar.lu-master-header>.controls{grid-column:2;grid-row:1}
   body.level-up-standard .topbar.lu-master-header .brand small{font-size:.6rem;letter-spacing:.12em}
 }
+
+
+/* Level Up Master Accessibility Panel v1 — Discovery / Resume District gold standard */
+body.lu-large-text{font-size:1.08em}
+.lu-accessibility-dialog{width:min(760px,94vw);max-width:760px}
+.lu-accessibility-dialog header small{color:#56e9ff;font-size:.78rem;font-weight:900;letter-spacing:.12em}
+.lu-accessibility-dialog h2{margin:.35rem 0 .25rem;font-size:clamp(2rem,4vw,3rem)}
+.lu-access-intro{margin:0 0 1rem;color:#c7d1ec;line-height:1.45}
+.lu-scene-description{margin:0 0 1rem;padding:1rem;border:1px solid #2d8aaa;border-radius:14px;background:#07162f}
+.lu-scene-description>div{display:flex;align-items:center;gap:.65rem;color:#55e8ff}
+.lu-scene-description p{margin:.8rem 0 0;color:#edf4ff;line-height:1.55}
+.lu-access-options{display:grid;gap:.65rem}
+.lu-preference-row{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem;border:1px solid #21385e;border-radius:14px;background:#07112a}
+.lu-preference-row>span{display:grid;gap:.25rem}
+.lu-preference-row small{color:#9eadd0;font-weight:500;line-height:1.35}
+.lu-preference-row input{width:22px;height:22px;accent-color:#54efb7}
+.lu-speed-options{margin:0;padding:1rem;border:1px solid #21385e;border-radius:14px;background:#07112a}
+.lu-speed-options legend{padding:0 .25rem;color:#eef4ff;font-weight:900;font-size:1rem}
+.lu-speed-options>div{display:grid;grid-template-columns:repeat(4,1fr);gap:.55rem;margin-top:.35rem}
+.lu-speed-options button{min-height:44px;border:1px solid #34527d;border-radius:9px;background:#07112a;color:#f5f7ff;font-weight:800;cursor:pointer}
+.lu-speed-options button.selected{border-color:#59e6f4;background:#59dff1;color:#03101b}
+.lu-caption-note{margin:1rem 0;color:#a9b8d7;font-size:.88rem;line-height:1.45}
+.lu-access-return{display:block;margin-left:auto;padding:.75rem 1rem;border:0;border-radius:10px;background:#171817;color:#fff;font-weight:850;cursor:pointer}
+@media(max-width:650px){.lu-speed-options>div{grid-template-columns:repeat(2,1fr)}}
