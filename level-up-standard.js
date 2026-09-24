@@ -56,6 +56,63 @@
     });
   }
 
+  function findNativeBack(){
+    const nav=document.querySelector('.navrow')||document;
+    return Array.from(nav.querySelectorAll('button')).find(b=>{
+      if(b.closest('.lu-scene-rail'))return false;
+      return /^\s*←?\s*back\s*$/i.test((b.textContent||'').trim());
+    })||null;
+  }
+
+  function closeControlDialog(){
+    document.querySelector('.lu-control-dialog-backdrop')?.remove();
+  }
+
+  function openControlDialog(kind){
+    closeControlDialog();
+    const backdrop=document.createElement('div');
+    backdrop.className='lu-control-dialog-backdrop';
+    backdrop.innerHTML=kind==='access'
+      ? `<section class="lu-control-dialog" role="dialog" aria-modal="true" aria-label="Accessibility">
+          <header><div><small>ACCESSIBILITY</small><h2>Choose how you learn</h2></div><button type="button" class="lu-dialog-close" aria-label="Close">×</button></header>
+          <label class="lu-switch-row"><span><b>Larger text & stronger borders</b><small>Increase text size and strengthen key borders.</small></span><input id="luLargeText" type="checkbox"></label>
+          <label class="lu-switch-row"><span><b>Reduce motion</b><small>Turn off pulsing hotspot and transition effects.</small></span><input id="luReduceMotion" type="checkbox"></label>
+          <p class="lu-dialog-note">Narration can be replayed, skipped, paused, or muted from Scene Controls. Captions are included with narrated media.</p>
+        </section>`
+      : `<section class="lu-control-dialog" role="dialog" aria-modal="true" aria-label="Interview Arena help">
+          <header><div><small>HELP</small><h2>Interview Arena controls</h2></div><button type="button" class="lu-dialog-close" aria-label="Close">×</button></header>
+          <div class="lu-help-guide">
+            <p><b>Audio</b> turns narration sound on or off.</p>
+            <p><b>Accessibility</b> opens display options for larger text, stronger borders, and reduced motion.</p>
+            <p><b>Replay narration</b> restarts the current narration from the beginning.</p>
+            <p><b>Skip narration</b> moves past narration so you can begin the scene activity.</p>
+            <p><b>Play narration</b> plays or pauses the current narration.</p>
+            <p><b>Back</b> returns to the previous scene without clearing your saved progress.</p>
+            <p><b>Continue</b> becomes available after required scene interactions are complete.</p>
+          </div>
+        </section>`;
+    document.body.append(backdrop);
+    backdrop.querySelector('.lu-dialog-close')?.addEventListener('click',closeControlDialog);
+    backdrop.addEventListener('click',e=>{if(e.target===backdrop)closeControlDialog()});
+    if(kind==='access'){
+      const large=backdrop.querySelector('#luLargeText');
+      const reduce=backdrop.querySelector('#luReduceMotion');
+      large.checked=document.body.classList.contains('a11y');
+      reduce.checked=document.body.classList.contains('lu-reduce-motion');
+      large.addEventListener('change',()=>{
+        const on=document.body.classList.contains('a11y');
+        if(large.checked!==on){
+          if(typeof window.toggleA11y==='function')window.toggleA11y();
+          else document.body.classList.toggle('a11y',large.checked);
+        }
+      });
+      reduce.addEventListener('change',()=>{
+        document.body.classList.toggle('lu-reduce-motion',reduce.checked);
+        try{localStorage.setItem('lu-interview-reduce-motion',reduce.checked?'1':'0')}catch(_){}
+      });
+    }
+  }
+
   function buildRail(wrap){
     const rail=document.createElement('aside');
     rail.className='lu-scene-rail';
@@ -68,12 +125,8 @@
       if(native)safeClick(native);else{const v=activeVideo();if(v)v.muted=!v.muted}
       syncRail(rail);
     });
-    const access=add('◉ Accessibility','',()=>{
-      const native=q('[aria-label*="Accessibility"]','[title*="Accessibility"]')||
-        byText('Accessibility',document.querySelector('.controls')||document)||
-        byText('Accessibility',document.querySelector('.topbar')||document);
-      safeClick(native);
-    });
+    const access=add('◉ Accessibility','',()=>openControlDialog('access'));
+    const help=add('? Help','',()=>openControlDialog('help'));
     const replay=add('↺ Replay narration','',()=>{
       const v=activeVideo();
       if(v){v.currentTime=0;v.play().catch(()=>{})}
@@ -88,9 +141,9 @@
       safeClick(native);
     });
     const play=add('▶ Play narration','',()=>{const v=activeVideo();if(v)(v.paused?v.play().catch(()=>{}):v.pause())});
-    const back=add('← Back','lu-back',()=>safeClick(document.querySelector('.nav-btn.prev')));
+    const back=add('← Back','lu-back',()=>safeClick(findNativeBack()));
     const cont=add('Continue →','lu-continue',()=>safeClick(document.querySelector('.nav-btn.next')));
-    audio.dataset.role='audio';access.dataset.role='access';replay.dataset.role='replay';skip.dataset.role='skip';play.dataset.role='play';back.dataset.role='back';cont.dataset.role='continue';
+    audio.dataset.role='audio';access.dataset.role='access';help.dataset.role='help';replay.dataset.role='replay';skip.dataset.role='skip';play.dataset.role='play';back.dataset.role='back';cont.dataset.role='continue';
     syncRail(rail);
     return rail;
   }
@@ -99,11 +152,8 @@
     if(!rail||!rail.isConnected)return;
     const v=activeVideo();
     const modal=!!document.querySelector('.modal-backdrop');
-    const prev=document.querySelector('.nav-btn.prev');
+    const prev=findNativeBack();
     const next=document.querySelector('.nav-btn.next');
-    const nativeAccess=q('[aria-label*="Accessibility"]','[title*="Accessibility"]')||
-      byText('Accessibility',document.querySelector('.controls')||document)||
-      byText('Accessibility',document.querySelector('.topbar')||document);
     const audio=rail.querySelector('[data-role="audio"]');
     const access=rail.querySelector('[data-role="access"]');
     const replay=rail.querySelector('[data-role="replay"]');
@@ -112,7 +162,7 @@
     const back=rail.querySelector('[data-role="back"]');
     const cont=rail.querySelector('[data-role="continue"]');
     if(audio)audio.textContent=v?.muted?'🔇 Audio off':'🔊 Audio on';
-    if(access){access.hidden=!nativeAccess;access.disabled=!nativeAccess}
+    if(access){access.hidden=false;access.disabled=false}
     const lesson=document.querySelector('.lesson-modal');
     const nativeReplay=lesson?byText('Replay narration',lesson):byText('Replay narration',document.querySelector('.topbar')||document);
     const nativeSkip=lesson?byText('Skip narration',lesson):byText('Skip narration',document.querySelector('.topbar')||document);
@@ -148,6 +198,9 @@
     }
     let rail=wrap.querySelector('.lu-scene-rail');
     if(!rail)rail=buildRail(wrap);
+    const nativeBack=findNativeBack();
+    if(nativeBack)nativeBack.classList.add('lu-native-nav-hidden');
+    try{document.body.classList.toggle('lu-reduce-motion',localStorage.getItem('lu-interview-reduce-motion')==='1')}catch(_){}
     syncRail(rail);
     ensureMockInterviewEntry(stage);
   }
