@@ -1,4 +1,4 @@
-/* Level Up UX Standard v1 — Interview Arena navigation/caption cleanup */
+/* Level Up UX Standard v2 — canonical Interview Arena controls, captions, and legacy-control proxying */
 :root{--lu-rail:190px}
 body.level-up-standard{overflow-x:hidden}
 body.level-up-standard #root>main,body.level-up-standard main.app,body.level-up-standard .app,body.level-up-standard main.shell{max-width:1740px;margin-inline:auto}
@@ -125,8 +125,7 @@ body.level-up-standard .lu-hotspot-iconized:focus-visible::after{color:#fff;text
 .lu-scene-rail .lu-back[hidden],.lu-scene-rail .lu-continue[hidden]{display:none}
 
 /* Keep the native controls as the authoritative app hooks, but not as duplicate learner-facing controls. */
-body.level-up-standard .controls .header-action,
-body.level-up-standard .controls .icon-btn,
+body.level-up-standard .lu-native-control-hidden,
 body.level-up-standard .lu-native-nav-hidden,
 body.level-up-standard .nav-btn.next{
   position:absolute!important;width:1px!important;height:1px!important;left:-9999px!important;
@@ -167,7 +166,11 @@ body.level-up-standard .scene-status{justify-self:center}
 .lu-dialog-note{margin:18px 0 0;padding:13px 14px;border:1px solid #2f7097;border-radius:12px;background:#07162f}
 .lu-help-guide{display:grid;gap:10px}
 .lu-help-guide p{margin:0;padding:12px 14px;border:1px solid #284c77;border-radius:12px;background:#07162f;line-height:1.45}
-body.lu-hide-captions .narration{opacity:0!important}
-body.lu-hide-captions .caption-shade{opacity:0!important}
+body.lu-hide-captions .caption-shade,
+body.lu-hide-captions .caption-text,
+body.lu-hide-captions .visual-caption{
+  opacity:0!important;
+  visibility:hidden!important
+}
 body.lu-reduce-motion *,body.lu-reduce-motion *::before,body.lu-reduce-motion *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 @media(max-width:650px){.lu-control-dialog{padding:18px;border-radius:16px}}
