@@ -1,4 +1,4 @@
-/* Level Up UX Standard v3 — canonical controls bound to native Interview Arena learner state */
+/* Level Up UX Standard v4 — master Level Up shell + controls bound to native Interview Arena learner state */
 (()=>{
   const q=(...selectors)=>selectors.map(s=>document.querySelector(s)).find(Boolean);
   const byText=(needle,scope=document)=>Array.from(scope.querySelectorAll('button')).find(b=>(b.textContent||'').toLowerCase().includes(needle.toLowerCase()));
@@ -67,6 +67,83 @@
       .trim();
     if(!text||/^explored$/i.test(text))text='Explore';
     return titleCase(text);
+  }
+
+  function cloudMeta(){
+    let status='local';
+    try{if(typeof cloud!=='undefined'&&cloud?.status)status=cloud.status}catch(_){}
+    if(status==='syncing')return {icon:'☁',label:'Saving progress'};
+    if(status==='synced')return {icon:'☁',label:'Progress saved to Level Up'};
+    if(status==='offline')return {icon:'☁̸',label:'Progress saved on this device'};
+    return {icon:'☁',label:'Progress saved on this device'};
+  }
+
+  function clearInterviewArena(){
+    if(!confirm('Reset Interview Arena and clear its saved progress?'))return;
+    try{
+      if(typeof cloneInitial==='function'&&typeof state!=='undefined'){
+        state=cloneInitial();
+        if(typeof save==='function')save();
+        if(typeof render==='function')render();
+      }
+    }catch(_){}
+  }
+
+  function ensureMasterHeader(){
+    const topbar=document.querySelector('.topbar');
+    if(!topbar)return;
+    topbar.classList.add('lu-master-header');
+    const meta=topbar.querySelector('.progress-meta');
+    if(meta){
+      const first=meta.querySelector('span');
+      const xp=meta.querySelector('b');
+      if(first&&!meta.querySelector('.lu-scene-counter')){
+        const raw=(first.textContent||'').trim();
+        const match=raw.match(/^(.*?)\s*·\s*Scene\s+(\d+)\s+of\s+(\d+)$/i);
+        first.classList.add('lu-progress-title');
+        if(match){
+          first.textContent=match[1];
+          const counter=document.createElement('span');
+          counter.className='lu-scene-counter';
+          counter.textContent=`Scene ${match[2]} of ${match[3]}`;
+          meta.insertBefore(counter,xp||null);
+        }
+      }
+      if(xp)xp.classList.add('lu-progress-xp');
+    }
+    const controls=topbar.querySelector('.controls');
+    if(!controls)return;
+    let utilities=controls.querySelector('.lu-master-utilities');
+    if(!utilities){
+      utilities=document.createElement('div');
+      utilities.className='lu-master-utilities';
+      const city=document.createElement('button');
+      city.type='button';city.className='lu-master-utility lu-city';
+      city.innerHTML='<span aria-hidden="true">←</span><b>Opportunity City</b>';
+      city.setAttribute('aria-label','Back to Opportunity City');
+      city.title='Back to Opportunity City';
+      city.addEventListener('click',()=>{location.href='https://pinalworkforce1-del.github.io/Level_Up_Portal/'});
+      const cloudEl=document.createElement('span');
+      cloudEl.className='lu-master-cloud';
+      cloudEl.setAttribute('aria-label','Level Up save status');
+      const help=document.createElement('button');
+      help.type='button';help.className='lu-master-utility lu-help';
+      help.innerHTML='<span aria-hidden="true">?</span><b>Help</b>';
+      help.setAttribute('aria-label','Open Interview Arena help');
+      help.title='Help';
+      help.addEventListener('click',()=>openControlDialog('help'));
+      const clear=document.createElement('button');
+      clear.type='button';clear.className='lu-master-utility lu-clear';
+      clear.innerHTML='<span aria-hidden="true">↻</span>';
+      clear.setAttribute('aria-label','Clear Interview Arena progress');
+      clear.title='Clear Interview Arena progress';
+      clear.addEventListener('click',clearInterviewArena);
+      utilities.append(city,cloudEl,help,clear);
+      controls.prepend(utilities);
+    }
+    const cloudEl=utilities.querySelector('.lu-master-cloud');
+    const cloudState=cloudMeta();
+    if(cloudEl){cloudEl.textContent=cloudState.icon;cloudEl.title=cloudState.label}
   }
 
   function decorateHotspots(){
@@ -281,6 +358,7 @@
   function ensure(){
     scheduled=false;
     document.body.classList.add('level-up-standard');
+    ensureMasterHeader();
     decorateHotspots();
     const stage=q('.stage','.scene-frame','.game-stage','.scene-stage');
     if(!stage)return;
@@ -326,4 +404,5 @@
   const observer=new MutationObserver(schedule);
   observer.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['disabled','hidden','class','src','muted']});
   document.readyState==='loading'?document.addEventListener('DOMContentLoaded',schedule):schedule();
+  window.setInterval(()=>{try{ensureMasterHeader()}catch(_){}},1000);
 })();
