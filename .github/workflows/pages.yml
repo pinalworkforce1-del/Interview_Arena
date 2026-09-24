@@ -28,7 +28,15 @@ jobs:
           cat interview-arena-source.tar.gz.part-* > interview-arena-source.tar.gz
           mkdir restored
           tar -xzf interview-arena-source.tar.gz -C restored
-      - name: Apply Level Up UX Standard v2
+      - name: Bind accessibility to native Interview Arena state
+        run: |
+          python3 scripts/patch-native-accessibility.py restored/dist/app.js
+          grep -q "settings:{auto:true,captions:true,reduce:false}" restored/dist/app.js
+          grep -Fq "state.settings.auto?'autoplay':''" restored/dist/app.js
+          grep -q "lu-hide-captions" restored/dist/app.js
+          grep -q "lu-reduce-motion" restored/dist/app.js
+          node --check restored/dist/app.js
+      - name: Apply Level Up UX Standard v3
         run: |
           VERSION="${GITHUB_SHA:0:12}"
           cp level-up-standard.css "restored/dist/level-up-standard.${VERSION}.css"
@@ -90,11 +98,18 @@ jobs:
           app.write_text(s)
           PY
 
-      - name: Verify offline progress integration
+      - name: Verify Level Up state + offline progress integration
         run: |
           grep -q "LevelUpOfflineProgress?.save(MODULE_ID" restored/dist/app.js
           grep -q "LevelUpOfflineProgress?.markSynced(MODULE_ID" restored/dist/app.js
+          grep -q "settings:{auto:true,captions:true,reduce:false}" restored/dist/app.js
+          grep -q "function nativeSettings()" "restored/dist/level-up-standard.${GITHUB_SHA:0:12}.js"
+          if grep -q "lu-interview-auto-narration" "restored/dist/level-up-standard.${GITHUB_SHA:0:12}.js"; then
+            echo "Legacy adapter-local accessibility state is still present"
+            exit 1
+          fi
           node --check restored/dist/app.js
+          node --check "restored/dist/level-up-standard.${GITHUB_SHA:0:12}.js"
 
       - name: Generate offline manifest
         run: |
