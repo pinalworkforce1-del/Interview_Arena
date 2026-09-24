@@ -47,12 +47,34 @@ jobs:
           cp offline-progress.js restored/dist/offline-progress.js
           python3 - <<'PY'
           from pathlib import Path
+
           p = Path('restored/dist/index.html')
           s = p.read_text()
           if 'offline-client.js' not in s:
               s = s.replace('</body>', '<script defer src="./offline-client.js"></script><script defer src="./offline-progress.js"></script></body>')
           p.write_text(s)
+
+          app = Path('restored/dist/app.js')
+          s = app.read_text()
+          old = "function save(){state.savedAt=new Date().toISOString();localStorage.setItem(STORAGE_KEY,JSON.stringify(state));scheduleCloudSync()}"
+          new = "function save(){state.savedAt=new Date().toISOString();localStorage.setItem(STORAGE_KEY,JSON.stringify(state));window.LevelUpOfflineProgress?.save(MODULE_ID,state,{xp:state.xp,isComplete:state.complete,completedAt:state.complete?state.savedAt:null,updatedAt:state.savedAt});scheduleCloudSync()}"
+          if old not in s:
+              raise SystemExit('Interview Arena save hook signature changed; offline patch not applied')
+          s = s.replace(old, new)
+
+          old_sync = "cloud.status=res.ok?'synced':'offline'}catch{cloud.status='offline'}}"
+          new_sync = "cloud.status=res.ok?'synced':'offline';if(res.ok)window.LevelUpOfflineProgress?.markSynced(MODULE_ID)}catch{cloud.status='offline'}}"
+          if old_sync not in s:
+              raise SystemExit('Interview Arena cloud sync signature changed; markSynced patch not applied')
+          s = s.replace(old_sync, new_sync, 1)
+          app.write_text(s)
           PY
+
+      - name: Verify offline progress integration
+        run: |
+          grep -q "LevelUpOfflineProgress?.save(MODULE_ID" restored/dist/app.js
+          grep -q "LevelUpOfflineProgress?.markSynced(MODULE_ID" restored/dist/app.js
+          node --check restored/dist/app.js
 
       - name: Generate offline manifest
         run: |
