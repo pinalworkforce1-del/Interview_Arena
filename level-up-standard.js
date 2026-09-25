@@ -416,12 +416,21 @@
     b.id='luMockInterviewEntry';
     b.type='button';
     b.className='nav-btn next';
-    b.textContent='⚔ Launch AI Mock Interview • 200 XP';
     b.style.marginLeft='8px';
+    const syncMockAvailability=()=>{
+      const online=navigator.onLine;
+      b.disabled=!online;
+      b.textContent=online?'⚔ Launch AI Mock Interview • 200 XP':'⚔ AI Mock Interview • Online connection required';
+      b.title=online?'Launch AI Mock Interview':'Available when you are back online';
+    };
+    syncMockAvailability();
     b.addEventListener('click',()=>{
+      if(!navigator.onLine)return;
       const target='https://pinalworkforce1-del.github.io/LU_Discovery/mock-interview.html?mode=selfpaced&returnTo='+encodeURIComponent(location.href);
       location.href=target;
     });
+    window.addEventListener('online',syncMockAvailability);
+    window.addEventListener('offline',syncMockAvailability);
     nav.appendChild(b);
   }
 
