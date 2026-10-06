@@ -36,6 +36,91 @@ jobs:
           grep -q "lu-hide-captions" restored/dist/app.js
           grep -q "lu-reduce-motion" restored/dist/app.js
           node --check restored/dist/app.js
+      - name: Keep AI mock interview available after completion
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path('level-up-standard.js')
+          s = p.read_text(encoding='utf-8')
+          old = '''  function ensureMockInterviewEntry(stage){
+    const title=(document.querySelector('.progress-meta span')?.textContent||document.querySelector('.scene-status')?.textContent||'').toLowerCase();
+    const finalScene=/quest complete|scene 11|complete/.test(title);
+    let b=document.getElementById('luMockInterviewEntry');
+    if(!finalScene){if(b)b.remove();return}
+    if(b)return;
+    const nav=stage.querySelector('.navrow')||stage;
+    b=document.createElement('button');
+    b.id='luMockInterviewEntry';
+    b.type='button';
+    b.className='nav-btn next';
+    b.style.marginLeft='8px';
+    const syncMockAvailability=()=>{
+      const online=navigator.onLine;
+      b.disabled=!online;
+      b.textContent=online?'⚔ Launch AI Mock Interview • 200 XP':'⚔ AI Mock Interview • Online connection required';
+      b.title=online?'Launch AI Mock Interview':'Available when you are back online';
+    };
+    syncMockAvailability();
+    b.addEventListener('click',()=>{
+      if(!navigator.onLine)return;
+      const target='https://pinalworkforce1-del.github.io/LU_Discovery/mock-interview.html?mode=selfpaced&returnTo='+encodeURIComponent(location.href);
+      location.href=target;
+    });
+    window.addEventListener('online',syncMockAvailability);
+    window.addEventListener('offline',syncMockAvailability);
+    nav.appendChild(b);
+  }
+'''
+          new = '''  function mockInterviewEarned(){
+    try{
+      if(typeof state!=='undefined'&&Array.isArray(state.earned)&&state.earned.includes('mock-interview'))return true;
+      const saved=JSON.parse(localStorage.getItem('level-up-interview-arena-v3')||'{}');
+      return Array.isArray(saved.earned)&&saved.earned.includes('mock-interview');
+    }catch(_){return false}
+  }
+
+  function ensureMockInterviewEntry(stage){
+    const title=(document.querySelector('.progress-meta span')?.textContent||document.querySelector('.scene-status')?.textContent||'').toLowerCase();
+    const finalScene=/quest complete|scene 11|complete/.test(title);
+    let moduleComplete=false;
+    try{moduleComplete=typeof state!=='undefined'&&!!state.complete}catch(_){}
+    let b=document.getElementById('luMockInterviewEntry');
+    if(!finalScene&&!moduleComplete){if(b)b.remove();return}
+    const syncMockAvailability=()=>{
+      if(!b)return;
+      const online=navigator.onLine;
+      const earned=mockInterviewEarned();
+      b.disabled=!online;
+      b.textContent=online?(earned?'⚔ Practice AI Mock Interview':'⚔ Launch AI Mock Interview • 200 XP'):'⚔ AI Mock Interview • Online connection required';
+      b.title=online?(earned?'Practice another AI mock interview':'Launch AI Mock Interview'):'Available when you are back online';
+    };
+    if(!b){
+      const nav=stage.querySelector('.navrow')||stage;
+      b=document.createElement('button');
+      b.id='luMockInterviewEntry';
+      b.type='button';
+      b.className='nav-btn lu-mock-interview-entry';
+      b.style.marginLeft='8px';
+      b.addEventListener('click',()=>{
+        if(!navigator.onLine)return;
+        const target='https://pinalworkforce1-del.github.io/LU_Discovery/mock-interview.html?mode=selfpaced&returnTo='+encodeURIComponent(location.href);
+        location.href=target;
+      });
+      window.addEventListener('online',syncMockAvailability);
+      window.addEventListener('offline',syncMockAvailability);
+      nav.appendChild(b);
+    }
+    syncMockAvailability();
+  }
+'''
+          if old not in s:
+              raise SystemExit('Mock interview launch signature changed; reusable practice patch not applied')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          PY
+          grep -q "Practice AI Mock Interview" level-up-standard.js
+          grep -q "moduleComplete" level-up-standard.js
+          node --check level-up-standard.js
       - name: Apply Level Up UX Standard v3
         run: |
           VERSION="${GITHUB_SHA:0:12}"
@@ -104,6 +189,7 @@ jobs:
           grep -q "LevelUpOfflineProgress?.markSynced(MODULE_ID" restored/dist/app.js
           grep -q "settings:{auto:true,captions:true,reduce:false,large:false,playbackRate:1}" restored/dist/app.js
           grep -q "function nativeSettings()" "restored/dist/level-up-standard.${GITHUB_SHA:0:12}.js"
+          grep -q "Practice AI Mock Interview" "restored/dist/level-up-standard.${GITHUB_SHA:0:12}.js"
           if grep -q "lu-interview-auto-narration" "restored/dist/level-up-standard.${GITHUB_SHA:0:12}.js"; then
             echo "Legacy adapter-local accessibility state is still present"
             exit 1
