@@ -4,6 +4,11 @@ import sys
 path = Path(sys.argv[1] if len(sys.argv) > 1 else "level-up-standard.js")
 text = path.read_text(encoding="utf-8")
 
+# The current deployment uses Jacqueline, not the legacy on-device mock interview.
+if "function ensureJacquelineInterviewEntry(stage)" in text:
+    print("Jacqueline live interview entry already installed.")
+    sys.exit(0)
+
 old = """  function ensureMockInterviewEntry(stage){
     const title=(document.querySelector('.progress-meta span')?.textContent||document.querySelector('.scene-status')?.textContent||'').toLowerCase();
     const finalScene=/quest complete|scene 11|complete/.test(title);
