@@ -153,7 +153,10 @@ jobs:
       - name: Upload static site
         uses: actions/upload-pages-artifact@v3
         with:
+          name: interview-arena-pages-${{ github.run_id }}-${{ github.run_attempt }}
           path: restored/dist
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: interview-arena-pages-${{ github.run_id }}-${{ github.run_attempt }}
